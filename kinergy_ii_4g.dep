@@ -1,0 +1,3270 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+    <fileVersion>4</fileVersion>
+    <fileChecksum>575417674</fileChecksum>
+    <configuration>
+        <name>Debug</name>
+        <outputs>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\cklcd\net_device_tree_cklcd.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\cklcd\net_device_data_cklcd.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy_ii\net_device_data_kinergy_ii.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_real_time_data_build.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_tree.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy_ii\net_device_status_kinergy_ii.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_firmware_update_info.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy_ii\net_device_tree_kinergy_ii.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_tree_relation.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\cklcd\net_device_status_cklcd.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_tree_build.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\ck_inverter\net_device_data_ck_inverter.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_status.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\ck_inverter\net_device_status_ck_inverter.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_system_info.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\ck_inverter\net_device_set_attribute_ck_inverter.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_tree_build.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_system_info.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\ck_inverter\net_device_tree_ck_inverter.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\cklcd\net_device_data_cklcd.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\cklcd\net_device_set_attribute_cklcd.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_real_time_data_build.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_system_info_access.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\device_data_attribute.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_data.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_active_push_data_build.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_data_attribute.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_info.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\device_data_attribute.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_info.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_data_attribute.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_attribute_tree_build.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_attribute_tree_build.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_data_polling.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_data_polling.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_active_push_data_build.c</file>
+            <file>$PROJ_DIR$\Debug\Obj\drv_spiflash.o</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_ble_communication.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\croutine.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\display_management.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_mppt.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_xfmc.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\crc16_arithmetic.__cstat.et</file>
+            <file>$TOOLKIT_DIR$\inc\c\stdio.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_eventlog_info_operate.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_kinergy.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_exti.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_meter.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_attribute_tree_build.pbi</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\net_firmware_update.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_flash.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_system.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\display_management_queue.__cstat.et</file>
+            <file>$TOOLKIT_DIR$\inc\c\iccarm_builtin.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_real_time_data_build.__cstat.et</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Defaults.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_firmware_info_kinergy_ii.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_xfmc.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\freertos_user_config.__cstat.et</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_local_secquence_generate.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_crc.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\event_groups.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_access.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_bkp.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\key_operate.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootSpiFlashCode.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_device_secquence_operate.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_pv.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootLoader.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_adc.__cstat.et</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\net_segmented_inquire.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_xfmc.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_ble_communication.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\InterruptJmpTable.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_pv.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_attribute.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_meter.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_eventlog_info_operate.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_attribute.o</file>
+            <file>$TOOLKIT_DIR$\inc\c\intrinsics.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_communication_queue.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communication_transmission.pbi</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_protocal_cmd_macro.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_system.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\list.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\usart_config_log.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_set_attribute_ck_inverter.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\usart_config_log.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_qspi.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_relation_kinergy_ii.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\extern_flash_operate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_ble_communication.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\spi_flash_operate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_can.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_secquence_generate.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_set_attribute_cklcd.pbi</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootFlashCode.H</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootloaderAsmFuncs.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_eth.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\wired_network_config_general.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_energy_statistics.pbi</file>
+            <file>$PROJ_DIR$\source\app\include\device_info.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\key.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_system_info_list.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_tcp_at_driver.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_firmware_update.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_iot_module_data_queue.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_cklcd.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_tcp_at_driver.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_pv.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_meter.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communicate_protocal.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_meter.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_rtc.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_rtc.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\port.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_info.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dbg.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\drv_spiflash.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_it.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_tim.pbi</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_device_config_sycn.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communication_tx_queue.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_iot_module_data_channel_manage.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\main.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_comp.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\crc16_arithmetic.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_rcc.o</file>
+            <file>$TOOLKIT_DIR$\inc\c\stdlib.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_communication_queue.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_kinergy_ii.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\freertos_user_config.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_communication.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\list.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_build.pbi</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_local_firmware_update.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_set_attribute_cklcd.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_tbb_device_server_communicate.pbi</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_offline_data_operate.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\usart_config_lte.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\timers.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootSpiFlashCode.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_system_type_operate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_system.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_kinergy.__cstat.et</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_module_config_queue.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_kinergy.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_active_push_data_build.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\display_management.__cstat.et</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\stack_macros.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\string.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_config_queue.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\usart_config_lte.__cstat.et</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_module_stander_at_driver.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_info_kinergy_ii.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_adc.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\printf_custom.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_system.pbi</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\list.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_wwdg.__cstat.et</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\net_forward_set_ctrl.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\crc16_table.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_server_response_queue.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_it.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\iot_module_config_common.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_mppt.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\IICDriver.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_relation_kinergy_ii.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_kinergy.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dvp.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_polling.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootUARTCode.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_flash.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\msg_queue_operate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_stander_at_driver.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dac.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\system_timestamp_generate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_protocal.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootloaderAPP.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_cklcd.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_offline_data_operate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_mppt.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_i2c.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\heap_4.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\misc.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\iot_module_config_general.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\system_timestamp_generate.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_adc.pbi</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\event_groups.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_set_attribute_kinergy.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_real_time_data_build.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_i2c.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\iot_module_config_common.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_attribute.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_ck_inverter.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_config.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_set_attribute_ck_inverter.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_sdio.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\spi_flash_operate_queue.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\crc16_table.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_ble_communication.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_segmented_inquire.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\data_convert_rs485_net_cklcd.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_communication_queue.o</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\projdefs.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\Eeprom.__cstat.et</file>
+            <file>$PROJ_DIR$\source\mcu\core\core_cm4.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\ysizet.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\crc16_table.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_info_kinergy_ii.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_eth.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_config.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\croutine.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_cklcd.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\timers.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_wwdg.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_info_kinergy_ii.__cstat.et</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_device_config.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_device_config_sycn.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_build.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_mppt.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_set_attribute_kinergy.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_ck_inverter.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\stream_buffer.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_kinergy.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_sdio.o</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\queue.h</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Product_stdlib.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_kinergy_ii.__cstat.et</file>
+            <file>$TOOLKIT_DIR$\inc\c\stddef.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\extern_flash_operate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_firmware_update.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_mppt.o</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Config_Normal.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_id_kinergy_ii.pbi</file>
+            <file>$PROJ_DIR$\source\app\include\display_management.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_iot_module_data_channel_manage.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\spi_flash_operate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_gpio.o</file>
+            <file>$PROJ_DIR$\source\mcu\core\cmsis_compiler.h</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\stream_buffer.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_kinergy_ii.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_mppt.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_can.o</file>
+            <file>$PROJ_DIR$\source\app\sourse\Wired Network\Rs485 Network\include\rs485_communicate_protocal.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_opamp.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_meter.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_mppt.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_usart.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\event_groups.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\device_data_attribute.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_iwdg.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_cklcd.o</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Product.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_kinergy.pbi</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_local_config.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\spi_flash_operate.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_usart.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_protocal.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\extern_flash_operate.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_spi.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\system_n32g45x.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_info.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_crc.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_ck_inverter.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_config_common.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_kinergy_ii.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_system_info_list.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_kinergy_ii.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_config_common.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\application_general_func.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\key_operate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_ck_inverter.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_firmware_info_kinergy_ii.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_kinergy_ii.pbi</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\task.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_pv.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\heap_4.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootFlashCode.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_meter.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\startup_n32g45x_EWARM.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\tasks.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\device_data_attribute.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_eventlog_info_operate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootLoader.pbi</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_module_tcp_at_driver.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_tbb_device_server_communicate.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_iot_module_data_channel_manage.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\freertos_user_config.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_kinergy_ii.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_kinergy.__cstat.et</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\FreeRTOS.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_server_response_queue.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_com_interface_init.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_ble_communication_queue.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_segmented_inquire.pbi</file>
+            <file>$TOOLKIT_DIR$\inc\c\yvals.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\tasks.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\data_convert_rs485_net_cklcd.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dma.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\wired_network_config_general.o</file>
+            <file>$TOOLKIT_DIR$\inc\c\DLib_Product_string.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_kinergy.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\port.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_system.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\key.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_gpio.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\msg_queue_operate.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\misc.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_bkp.o</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\deprecated_definitions.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_ble_at_driver.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_mppt.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\event_groups.__cstat.et</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_module_com_interface_init.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_protocal_data_assembly.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dbg.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_iot_module_data_queue.pbi</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_module_data_queue.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_pwr.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\key_operate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\misc.pbi</file>
+            <file>$PROJ_DIR$\source\common\Include\msg_queue.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_usart.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\data_convert_rs485_net_cklcd.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\device_data_attribute.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_offline_data_operate.o</file>
+            <file>$TOOLKIT_DIR$\inc\c\iar_intrinsics_common.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\list.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_kinergy_ii.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_pwr.o</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_module.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_protocal_data_assembly.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\queue.o</file>
+            <file>$PROJ_DIR$\source\Bootloader\drv_vsprintf.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\timers.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\stream_buffer.__cstat.et</file>
+            <file>$PROJ_DIR$\source\Bootloader\IcpHead.H</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_spi.__cstat.et</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Common\system_info_ex_call.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_system.pbi</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_system_type_operate.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communication_transmission.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_ble_at_driver.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_device_secquence_operate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_config_queue.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_firmware_update.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_bkp.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_polling.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_4g_tbb_device_server_communicate.o</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_4G_module_ble_at_driver.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\application_general_func.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_id_kinergy_ii.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_ck_inverter.__cstat.et</file>
+            <file>$PROJ_DIR$\source\app\sourse\Wired Network\Common\wired_network_config_general.h</file>
+            <file>$PROJ_DIR$\source\app\include\application_general_func.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dma.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\usart_config_lte.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_can.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_exti.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\key.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_tbb_device_server_communicate.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_ble_communication_queue.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootUARTCode.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootSpiFlashCode.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_system.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_system_info_access.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_system_info.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_system_info_access.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\led.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\display_management_queue.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\system_n32g45x.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_secquence_generate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\display_management_queue.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_wwdg.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_polling.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_exti.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\iot_module_config_common.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_4g_tbb_device_server_communicate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_system.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_protocal_data_assembly.__cstat.et</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\croutine.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_cklcd.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_sdio.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_attribute_tree_build.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_active_push_data_build.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\IICDriver.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\system_n32g45x.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_data_queue.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_it.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_tcp_at_driver.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_cklcd.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_tim.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_iot_module_data_channel_manage.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_pv.o</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_module_config_common.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_tsc.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_set_attribute_kinergy.o</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootUARTCode.H</file>
+            <file>$PROJ_DIR$\source\app\include\system_timestamp_generate.h</file>
+            <file>$PROJ_DIR$\source\hal\include\printf_custom.h</file>
+            <file>$PROJ_DIR$\Debug\Exe\Upsilon4001 00.10.0128 b01.10(08004FFF).srec</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\Common\iot_module_config_common.h</file>
+            <file>$PROJ_DIR$\source\app\include\application_general_macro.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dvp.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\system_timestamp_generate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_rcc.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\spi_flash_operate_queue.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootloaderAPP.o</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\semphr.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_pv.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_kinergy.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootFlashCode.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\msg_queue.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communication_tx_queue.__cstat.et</file>
+            <file>$PROJ_DIR$\source\mcu\core\cmsis_iccarm.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_set_attribute_ck_inverter.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\main.__cstat.et</file>
+            <file>$TOOLKIT_DIR$\inc\c\stdbool.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\usart_config_log.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module_tcp_at_driver.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\queue.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_access.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\msg_queue_operate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\application_general_func.__cstat.et</file>
+            <file>$PROJ_DIR$\source\common\Include\msg_queue_operate.h</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_4g_module_stander_at_driver.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\printf_custom.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_device_secquence_operate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_system_type_operate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_firmware_info_kinergy_ii.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\iot_module_config_general.__cstat.et</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_4g_module_tcp_at_driver.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\product_test.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootIICCode.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_energy_statistics.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dbg.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\heap_4.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_pv.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_device_config_sycn.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_i2c.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\iot_module_config_general.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_tim.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_ble_communication_queue.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\drv_spiflash.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Exe\kinergy_ii.out</file>
+            <file>$PROJ_DIR$\Debug\Obj\portasm.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_rtc.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\crc16_arithmetic.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\display_management.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_build.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_config_queue.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_ftp_updata.o</file>
+            <file>$PROJ_DIR$\source\Bootloader\drv_log.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communicate_ex_call.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_iwdg.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_communication.o</file>
+            <file>$PROJ_DIR$\source\app\include\crc16_arithmetic.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_gpio.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communication_tx_queue.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_qspi.o</file>
+            <file>$PROJ_DIR$\source\hal\include\rs485_transmission\rs485_communication_tx_queue.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_comp.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootFlashCode.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_device_config_sycn.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module_stander_at_driver.pbi</file>
+            <file>$PROJ_DIR$\source\data_type_extern.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\product_test.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\queue.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_communication_queue.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_kinergy_ii.__cstat.et</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\portable.h</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_ftp_updata.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_com_interface_init.pbi</file>
+            <file>$PROJ_DIR$\source\Bootloader\Bootloaderapp.H</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_config.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_firmware_update.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_pv.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\Eeprom.o</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_local_device_secquence_operate.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module_ble_at_driver.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_real_time_data_build.o</file>
+            <file>$TOOLKIT_DIR$\inc\c\stdarg.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\led.o</file>
+            <file>$TOOLKIT_DIR$\inc\c\stdint.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_relation_kinergy_ii.__cstat.et</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_module_ble_at_driver.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_mppt.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_system_info_list.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_firmware_update.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_server_response_queue.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_active_push_data_build.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_meter.pbi</file>
+            <file>$TOOLKIT_DIR$\inc\c\ycheck.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_crc.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\stream_buffer.pbi</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_ble_communication_queue.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_firmware_update.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootIICCode.pbi</file>
+            <file>$PROJ_DIR$\source\Bootloader\Bootloader.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communicate_ex_call.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_ck_inverter.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_iot_module_data_queue.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_ftp_updata.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module_ble_at_driver.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_meter.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communicate_protocal.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_ftp_updata.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_offline_data_operate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_ck_inverter.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_4g_tbb_device_server_communicate.__cstat.et</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\LTE Module\lte_4g_module.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootLoader.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module_tcp_at_driver.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module_stander_at_driver.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module_ble_at_driver.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_id_kinergy_ii.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module_tcp_at_driver.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\port.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_protocal_data_assembly.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_cklcd.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_stander_at_driver.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_device_config.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_system.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dma.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_protocal.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dvp.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_communication.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\main.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_ble_at_driver.pbi</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\timers.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\msg_queue.__cstat.et</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\kinergy_ii\net_device_id_kinergy_ii.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\kinergy_ii\net_device_id_kinergy_ii.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_ble_communication_queue.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\kinergy_ii\net_device_tree_relation_kinergy_ii.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\kinergy_ii\net_device_info_kinergy_ii.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Wired Network\Rs485 Network\sourse\rs485_communicate_ex_call.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\net_firmware_update.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\kinergy_ii\net_firmware_info_kinergy_ii.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_communication_queue.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\net_system_info_list.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Protocal Data Convert\Device Type\System\net_device_data_access.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_eventlog_info_operate.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_iot_module_data_channel_manage.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_device_config_sycn.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Wired Network\Common\wired_network_config_general.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Wired Network\Rs485 Network\sourse\rs485_communicate_protocal.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\net_system_info_list.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\net_segmented_inquire.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_communication.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\System\net_device_tree_system.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Protocal Data Convert\Device Type\cklcd\Procotal Type\RS485\data_convert_rs485_net_cklcd.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_device_config.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_energy_statistics.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_ble_communication.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_system_info_access.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Protocal Data Convert\Device Type\System\net_device_data_access.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_4g_tbb_device_server_communicate.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\pv\net_device_status_pv.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\System\net_device_data_system.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\mppt\net_device_status_mppt.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy\net_device_set_attribute_kinergy.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\mppt\net_device_data_mppt.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy\net_device_status_kinergy.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\meter\net_device_data_meter.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\meter\net_device_tree_meter.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\meter\net_device_status_meter.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\pv\net_device_data_pv.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\pv\net_device_tree_pv.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\System\net_device_status_system.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy\net_device_tree_kinergy.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\mppt\net_device_tree_mppt.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy\net_device_data_kinergy.c</file>
+            <file>$PROJ_DIR$\source\hal\Exrern Flash Operate\SPI Flash Operate\spi_flash_operate.c</file>
+            <file>$PROJ_DIR$\source\driver\led\led.c</file>
+            <file>$PROJ_DIR$\source\hal\Exrern Flash Operate\SPI Flash Operate\spi_flash_operate_queue.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_4g_module_stander_at_driver.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_4g_module_ble_at_driver.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_ftp_updata.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_4g_module.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module.c</file>
+            <file>$PROJ_DIR$\source\driver\uart\lte\usart_config_lte.h</file>
+            <file>$PROJ_DIR$\source\driver\i2c\Eeprom.h</file>
+            <file>$PROJ_DIR$\source\driver\i2c\Eeprom.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\Common\iot_module_config_common.c</file>
+            <file>$PROJ_DIR$\source\hal\Exrern Flash Operate\SPI Flash Operate\spi_flash_address_allocate.h</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_ble_at_driver.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_4g_module_tcp_at_driver.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_com_interface_init.c</file>
+            <file>$PROJ_DIR$\source\driver\key\key.c</file>
+            <file>$PROJ_DIR$\source\driver\i2c\IICDriver.H</file>
+            <file>$PROJ_DIR$\source\driver\spi_flash\drv_spiflash.c</file>
+            <file>$PROJ_DIR$\source\driver\uart\log\usart_config_log.c</file>
+            <file>$PROJ_DIR$\source\driver\uart\rs485\rs485.c</file>
+            <file>$PROJ_DIR$\source\hal\Exrern Flash Operate\extern_flash_operate.c</file>
+            <file>$PROJ_DIR$\source\driver\key\key_operate.h</file>
+            <file>$PROJ_DIR$\source\driver\led\led.h</file>
+            <file>$PROJ_DIR$\source\driver\uart\rs485\rs485.h</file>
+            <file>$PROJ_DIR$\source\driver\key\key_operate.c</file>
+            <file>$PROJ_DIR$\source\driver\i2c\IICDriver.c</file>
+            <file>$PROJ_DIR$\source\driver\uart\log\usart_config_log.h</file>
+            <file>$PROJ_DIR$\source\driver\uart\lte\usart_config_lte.c</file>
+            <file>$PROJ_DIR$\source\driver\spi_flash\drv_spiflash.h</file>
+            <file>$PROJ_DIR$\source\driver\key\key.h</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootFlashCode.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\display_management.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_protocal.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_local_secquence_generate.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\crc16_table.c</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootLoader.c</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootloaderAPP.c</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootloaderAsmFuncs.asm</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootSpiFlashCode.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_local_firmware_update.c</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootIICCode.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_local_config.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_local_device_secquence_operate.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_offline_data_operate.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_server_response_queue.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\display_management_queue.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\crc16_arithmetic.c</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootloaderConfig.h</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_iot_module_data_queue.c</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootloaderHead.H</file>
+            <file>$PROJ_DIR$\source\Bootloader\BootUARTCode.C</file>
+            <file>$PROJ_DIR$\source\Bootloader\InterruptJmpTable.asm</file>
+            <file>$PROJ_DIR$\source\app\sourse\system_timestamp_generate.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_protocal_data_assembly.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_system_type_operate.c</file>
+            <file>$PROJ_DIR$\source\common\Source\msg_queue_operate.c</file>
+            <file>$PROJ_DIR$\source\common\Source\msg_queue.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\application_general_func.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_tbb_device_server_communicate.c</file>
+            <file>$PROJ_DIR$\source\app\sourse\product_test.c</file>
+            <file>$PROJ_DIR$\source\app\main.c</file>
+            <file>$PROJ_DIR$\source\mcu\device\system_n32g45x.h</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_stander_at_driver.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_bkp.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\misc.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_can.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_comp.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_crc.h</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_config_queue.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_dac.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_dac.h</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\iot_module_config_general.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_data_queue.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_adc.h</file>
+            <file>$PROJ_DIR$\source\mcu\device\n32g45x.h</file>
+            <file>$PROJ_DIR$\source\hal\sourse\rs485_transmission\rs485_communication_tx_queue.c</file>
+            <file>$PROJ_DIR$\source\mcu\device\system_n32g45x.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\printf_custom.c</file>
+            <file>$PROJ_DIR$\source\mcu\interrupt\n32g45x_it.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_adc.c</file>
+            <file>$PROJ_DIR$\source\mcu\device\startup\startup_n32g45x_EWARM.s</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_can.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_bkp.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_tcp_at_driver.c</file>
+            <file>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_config_common.c</file>
+            <file>$PROJ_DIR$\source\mcu\device\n32g45x_conf.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_comp.h</file>
+            <file>$PROJ_DIR$\source\hal\sourse\rs485_transmission\rs485_communication_transmission.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_crc.c</file>
+            <file>$PROJ_DIR$\source\hal\include\debug_printf_manage.h</file>
+            <file>$PROJ_DIR$\source\mcu\interrupt\n32g45x_it.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\misc.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_pwr.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_dvp.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_qspi.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_qspi.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_eth.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_dma.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_gpio.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_rtc.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_rtc.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_opamp.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_dbg.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_dbg.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_eth.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_exti.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_flash.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_flash.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_exti.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_gpio.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_i2c.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_dma.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_i2c.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_rcc.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_dvp.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_iwdg.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_opamp.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_rcc.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_pwr.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_sdio.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_sdio.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_spi.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_iwdg.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_tsc.c</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\portable\IAR\ARM_CM4F\port.c</file>
+            <file>$PROJ_DIR$\Debug\Obj\product_test.__cstat.et</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\list.c</file>
+            <file>$PROJ_DIR$\Debug\Obj\tasks.pbi</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_tim.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_tsc.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_xfmc.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_xfmc.h</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\timers.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_wwdg.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_wwdg.c</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\event_groups.c</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\tasks.c</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\croutine.c</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\portable\MemMang\heap_4.c</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\portable\IAR\ARM_CM4F\portmacro.h</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\freertos_user_config.c</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\freertos_user_config.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\led.pbi</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\stream_buffer.c</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_usart.h</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\queue.c</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dac.__cstat.et</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\FreeRTOSConfig.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_device_config.__cstat.et</file>
+            <file>$PROJ_DIR$\source\app\include\product_test.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_tim.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\inc\n32g45x_spi.h</file>
+            <file>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_usart.c</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\portable\IAR\ARM_CM4F\portasm.s</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_pwr.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_cklcd.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootUARTCode.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_opamp.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_stander_at_driver.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_ck_inverter.o</file>
+            <file>$PROJ_DIR$\source\rtos\freertos\kernel\include\mpu_wrappers.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communication_transmission.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootloaderAPP.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_set_attribute_cklcd.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_segmented_inquire.o</file>
+            <file>$PROJ_DIR$\source\hal\Exrern Flash Operate\SPI Flash Operate\spi_flash_operate.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\wired_network_config_general.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_eth.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\croutine.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_tsc.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_data_queue.o</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_protocal.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\msg_queue.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_system_type_operate.o</file>
+            <file>$PROJ_DIR$\source\app\sourse\Network Communication\Inlcude\network_server_response_queue.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_opamp.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communicate_protocal.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_eventlog_info_operate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_iwdg.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_data_queue.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_energy_statistics.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_cklcd.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_pv.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_tree_meter.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\printf_custom.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_device_config.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\BootIICCode.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_config_common.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\Eeprom.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_spi.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_dac.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_comp.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_system_info_access.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_qspi.__cstat.et</file>
+            <file>$PROJ_DIR$\source\hal\include\IOTModule\iot_module_config_general.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_rcc.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\rs485_communicate_ex_call.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_info.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\spi_flash_operate_queue.pbi</file>
+            <file>$PROJ_DIR$\source\mcu\core\cmsis_version.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_system_info.o</file>
+            <file>$PROJ_DIR$\source\app\sourse\System Info\Common\system_info_general_macro.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\IICDriver.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_tbb_device_server_communicate.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_flash.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_4g_module_stander_at_driver.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_status_ck_inverter.pbi</file>
+            <file>$PROJ_DIR$\source\hal\include\rs485_transmission\rs485_communication_transmission.h</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_system_info.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\n32g45x_tsc.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\lte_module_com_interface_init.__cstat.et</file>
+            <file>$PROJ_DIR$\Debug\Obj\network_local_secquence_generate.pbi</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_attribute_tree_build.o</file>
+            <file>$PROJ_DIR$\Debug\Obj\net_device_data_access.__cstat.et</file>
+        </outputs>
+        <file>
+            <name>[ROOT_NODE]</name>
+            <outputs>
+                <tool>
+                    <name>ILINK</name>
+                    <file> 452</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\cklcd\net_device_tree_cklcd.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 528</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 739</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy_ii\net_device_data_kinergy_ii.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 133</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 271</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy_ii\net_device_status_kinergy_ii.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 273</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 478</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy_ii\net_device_tree_kinergy_ii.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 279</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 233</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\cklcd\net_device_status_cklcd.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 217</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 765</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_tree_build.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 137</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 223</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\ck_inverter\net_device_data_ck_inverter.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 509</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 517</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\ck_inverter\net_device_status_ck_inverter.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 790</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 359</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\ck_inverter\net_device_set_attribute_ck_inverter.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 199</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 423</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_system_info.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 374</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 792</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\ck_inverter\net_device_tree_ck_inverter.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 277</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 269</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\cklcd\net_device_data_cklcd.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 389</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 110</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\cklcd\net_device_set_attribute_cklcd.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 97</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 139</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_real_time_data_build.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 193</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 55</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_system_info_access.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 375</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 373</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_info.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 119</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 267</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\device_data_attribute.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 287</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 331</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 56 301 23 492 501 238 258</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_data_attribute.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 196</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 76</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 258 501 492 238 301 56 26</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_attribute_tree_build.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 49</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 391</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 492 211 6 4 26 501 347 14 56 345 153 306 407 785 361 301 238 258 29 8 24 12 23 360 44 673 1 32</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_device_data_polling.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 173</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 382</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 29 258 6 4 492 26 501 360 14 591 24 565 238 345 409 23 410 347 301 56 8 785 12 337 402 1 34</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Common\net_active_push_data_build.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 150</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 392</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 492 345 29 238 4 501 723 296 14 301 258 6 26 360 44 731 744 208 54 407 280 361 56 8 785 24 12 23 673 211 234 479 25 153 306 316 80 333 161</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\Debug\Exe\kinergy_ii.out</name>
+            <outputs>
+                <tool>
+                    <name>OBJCOPY</name>
+                    <file> 408</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\kinergy_ii\net_device_id_kinergy_ii.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 239</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 358</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_ble_communication_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 369</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 299</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\kinergy_ii\net_device_tree_relation_kinergy_ii.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 91</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 493</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\kinergy_ii\net_device_info_kinergy_ii.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 157</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 220</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Wired Network\Rs485 Network\sourse\rs485_communicate_ex_call.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 508</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 461</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\net_firmware_update.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 484</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 108</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\kinergy_ii\net_firmware_info_kinergy_ii.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 437</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 278</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_communication_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 81</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 477</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\System Info\System Type\net_system_info_list.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 106</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 272</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_eventlog_info_operate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 761</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 288</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_iot_module_data_channel_manage.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 126</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 241</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_device_config_sycn.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 222</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 446</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Wired Network\Common\wired_network_config_general.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 101</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 750</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Wired Network\Rs485 Network\sourse\rs485_communicate_protocal.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 514</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 760</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\net_segmented_inquire.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 300</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 205</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_communication.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 135</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 536</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\System\net_device_tree_system.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 346</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 52</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Protocal Data Convert\Device Type\cklcd\Procotal Type\RS485\data_convert_rs485_net_cklcd.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 206</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 303</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_device_config.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 769</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 732</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_energy_statistics.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 103</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 764</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_ble_communication.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 73</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 93</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Protocal Data Convert\Device Type\System\net_device_data_access.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 63</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 797</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_4g_tbb_device_server_communicate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 385</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 518</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\pv\net_device_status_pv.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 417</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 281</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\System\net_device_data_system.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 160</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 146</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\mppt\net_device_status_mppt.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 168</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 184</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy\net_device_set_attribute_kinergy.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 192</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 226</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\mppt\net_device_data_mppt.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 41</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 252</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy\net_device_status_kinergy.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 46</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 295</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\meter\net_device_data_meter.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 500</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 284</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\meter\net_device_tree_meter.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 113</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 48</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\meter\net_device_status_meter.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 251</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 115</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\pv\net_device_data_pv.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 68</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 75</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\pv\net_device_tree_pv.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 112</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 445</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\System\net_device_status_system.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 84</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 386</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy\net_device_tree_kinergy.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 307</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 418</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\mppt\net_device_tree_mppt.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 495</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 247</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\System Info\Network Data Info\Device Info\Device Type\kinergy\net_device_data_kinergy.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 259</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 147</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\Exrern Flash Operate\SPI Flash Operate\spi_flash_operate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 94</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 242</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\driver\led\led.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 726</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 376</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\Exrern Flash Operate\SPI Flash Operate\spi_flash_operate_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 782</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 414</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_4g_module_stander_at_driver.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 473</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 522</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 631 658 492 713 410 592 645 725 211 416 80 161 425 689 507 432 153 519 409 402 501 301 316 665 701 321 280 343 551 296 487 542 56 320 306 208 54 244 686 699 734 8 24 755 600 29 337 407 324 361 723 131 260 356 238 258 591 44 673 328 234 731 479 744 333 231 474 210 669 783 657 651 698 693 702 704 717 232 778 785 12 23 405 340 433 422 647 670 654 695 680 691 696 700 679 684 735 728 715 675 14 292 4 6 345 26 360 482 633 98 460</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_4g_module_ble_at_driver.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 488</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 512</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 658 492 280 54 234 591 8 24 402 306 301 161 416 291 409 744 208 699 296 337 501 479 723 410 244 686 734 153 44 725 407 56 211 232 731 333 778 29 785 12 23 231 474 210 665 689 701 713 131 321 504 487 519 238 258 320 361 316 80 755 14 292 4 6 345 26 360 432 328 645 425 669 783 657 651 698 693 702 704 717 356 422 647 670 654 695 680 691 696 700 679 684 735 728 715 675 673</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_ftp_updata.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 515</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 511</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 37 701 3 14 474 658 492 321 153 482 501 56 320 479 301 744 208 665 280 631 504 464 163 240 612 29 337 231 689 713 432 785 557 507 725 83 407 758 16 50 260 292 124 45 44 595 12 23 591 410 361 296 234 723 210 244 54 686 699 734 673 633 211 755 132 104 60 406 32 71 565 221 291 141 347 551 733 138 131 749 592 8 24 402 409 328 731 333 669 783 657 651 698 693 702 704 717 425 605 416 4 343 340 98 480 778 238 258 6 345 26 360 519 316 80 161 645 422 647 670 654 695 680 691 696 700 679 684 735 728 715 675 306 542 606 613 1 460 405 232 600</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_4g_module.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 368</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 530</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 40</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 225</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 409 492 292 234 296 658 425 665 432 320 208 701 402 723 361 494 301 211 54 479 501 744 689 713 410 337 280 148 321 56 731 153 328 645 244 686 699 734 8 24 519 131 407 324 551 725 156 290 306 238 258 232 591 80 333 316 161 44 673 416 231 474 210 669 783 657 651 698 693 702 704 717 778 29 785 12 23 422 647 670 654 695 680 691 696 700 679 684 735 728 715 675 755 14 4 6 345 26 360</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\driver\i2c\Eeprom.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 772</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 209</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\Common\iot_module_config_common.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 195</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 167</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_ble_at_driver.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 538</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 349</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 658 54 501 208 519 345 291 258 492 409 316 755 432 699 296 301 410 80 292 4 645 244 686 734 153 44 725 407 238 402 320 361 211 14 6 26 360 29 778 328 425 665 689 701 713 131 280 321 504 487 337 56 591 306 232 234 731 479 723 744 333 161 8 785 24 12 23 416 231 474 210 669 783 657 651 698 693 702 704 717 494 422 647 670 654 695 680 691 696 700 679 684 735 728 715 675 673</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_4g_module_tcp_at_driver.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 521</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 525</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 492 8 337 402 24 320 234 280 321 306 301 161 131 238 361 501 744 208 153 260 519 258 410 409 211 479 723 290 44 296 725 291 56 591 232 731 333 778 29 785 12 23 439 316 80 54 755 14 292 4 6 345 26 360</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_com_interface_init.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 481</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 794</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 301 651 80 744 704 658 234 501 56 492 693 725 645 657 698 702 717 425 422 54 665 686 689 699 701 734 713 280 479 211 410 723 320 361 238 258 210 669 783 244 647 670 654 695 680 691 696 700 679 684 735 728 715 675 333 731 208 296 316 161</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\driver\key\key.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 366</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 310</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\driver\spi_flash\drv_spiflash.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 121</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 451</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\driver\uart\log\usart_config_log.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 426</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 89</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\driver\uart\rs485\rs485.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 102</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 86</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\Exrern Flash Operate\extern_flash_operate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 92</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 235</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\driver\key\key_operate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 326</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 276</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\driver\i2c\IICDriver.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 393</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 169</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\driver\uart\lte\usart_config_lte.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 363</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 155</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\Bootloader\BootFlashCode.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 283</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 419</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\display_management.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 39</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 151</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_protocal.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 534</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 263</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_local_secquence_generate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 795</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 379</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\crc16_table.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 203</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 212</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\Bootloader\BootLoader.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 289</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 69</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\Bootloader\BootloaderAPP.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 181</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 746</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\Bootloader\BootloaderAsmFuncs.asm</name>
+            <outputs>
+                <tool>
+                    <name>AARM</name>
+                    <file> 99</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\Bootloader\BootSpiFlashCode.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 66</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 144</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_local_firmware_update.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 505</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 236</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\Bootloader\BootIICCode.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 506</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 770</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_local_config.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 198</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 483</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_local_device_secquence_operate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 435</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 350</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_offline_data_operate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 516</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 183</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_server_response_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 498</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 297</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\display_management_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 377</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 53</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\crc16_arithmetic.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 129</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 43</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_iot_module_data_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 323</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 109</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\Bootloader\BootUARTCode.C</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 174</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 740</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\Bootloader\InterruptJmpTable.asm</name>
+            <outputs>
+                <tool>
+                    <name>AARM</name>
+                    <file> 74</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\system_timestamp_generate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 412</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 179</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_protocal_data_assembly.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 338</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 387</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_system_type_operate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 145</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 436</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\common\Source\msg_queue_operate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 176</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 430</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\common\Source\msg_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 420</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 540</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\application_general_func.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 357</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 431</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\Network Communication\Source\network_tbb_device_server_communicate.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 140</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 787</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\sourse\product_test.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 440</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 709</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\app\main.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 537</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 424</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_stander_at_driver.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 177</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 529</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 410 211 684 592 492 725 501 645 670 658 360 482 432 153 56 337 306 208 54 691 675 14 631 507 519 551 296 487 542 409 591 402 416 301 316 80 161 425 695 700 728 6 4 26 29 778 633 460 407 324 361 723 280 131 260 320 238 258 44 673 328 234 731 479 744 333 231 474 210 422 647 654 680 696 679 735 715 755 292 345 98 699 343 156 669 783 244 657 665 651 686 698 689 693 702 701 704 734 717 713 232 321 8 785 24 12 23 600 405 340</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\misc.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 327</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 187</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 696 658 783 492 654 735 669 238 301 647 680 679 715 210 244 501 258 670 695 691 700 684 728 675 425 645 56 422 54 657 665 651 686 698 689 693 699 702 701 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_can.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 95</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 364</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 492 735 56 422 654 658 425 54 696 645 301 647 680 679 715 701 210 669 783 244 501 238 258 670 695 691 700 684 728 675 665 657 651 686 698 689 693 699 702 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_comp.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 775</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 470</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 735 783 492 654 696 658 669 238 301 647 680 679 715 210 244 501 258 670 695 691 700 684 728 675 425 701 645 56 422 54 657 665 651 686 698 689 693 699 702 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_config_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 351</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 154</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 479 654 658 238 492 735 783 696 211 296 669 301 647 680 679 715 425 328 148 410 258 210 244 670 695 691 700 684 728 675 234 161 432 416 474 501 56 645 422 54 657 665 651 686 698 689 693 699 702 701 704 734 717 713 731 723 744 208 316 80 333 231 280</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_dac.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 774</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 730</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 654 783 492 735 658 696 669 238 301 647 680 679 715 210 244 501 258 670 695 691 700 684 728 675 425 701 645 56 422 54 657 665 651 686 698 689 693 699 702 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\iot_module_config_general.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 188</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 438</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 492 410 56 337 402 301 409 519 501 238 258 591 320 361 778</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_data_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 395</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 763</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 492 693 651 704 231 296 645 657 698 702 717 658 316 324 410 474 501 56 425 422 54 665 686 689 699 701 734 713 80 432 211 416 301 238 258 210 669 783 244 647 670 654 695 680 691 696 700 679 684 735 728 715 675 208 333 280 328 234 731 479 723 744 161</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\rs485_transmission\rs485_communication_tx_queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 125</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 421</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 161 425 700 658 474 501 56 54 234 432 296 422 695 728 316 469 673 492 645 670 691 684 675 479 301 80 725 211 416 238 258 210 669 783 244 647 654 680 696 679 735 715 410 328 731 657 665 651 686 698 689 693 699 702 701 704 734 717 713 208 723 744 333 231 280 607 249</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\device\system_n32g45x.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 378</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 266</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 665 701 658 425 54 689 713 56 422 686 699 734 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\printf_custom.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 434</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 159</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 211 501 704 658 333 44 651 301 131 258 492 693 479 296 645 657 698 702 717 610 410 673 238 306 425 422 54 665 686 689 699 701 734 713 234 280 490 416 153 56 210 669 783 244 647 670 654 695 680 691 696 700 679 684 735 728 715 675 731 316 80 231 407 208 723 744 161 232</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\interrupt\n32g45x_it.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 396</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 166</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 657 669 702 658 492 698 717 231 161 783 651 693 704 316 591 210 244 501 56 422 54 665 686 689 699 701 734 713 80 607 645 425 301 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675 296 208 333 674 725 280 234 731 479 211 723 744</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_adc.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 190</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 70</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 492 693 651 704 658 645 301 657 698 702 717 425 56 422 54 665 686 689 699 701 734 713 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\device\startup\startup_n32g45x_EWARM.s</name>
+            <outputs>
+                <tool>
+                    <name>AARM</name>
+                    <file> 285</file>
+                </tool>
+            </outputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_bkp.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 64</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 353</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 701 665 658 425 54 689 713 56 422 686 699 734 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_tcp_at_driver.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 107</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 111</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 778 291 492 238 402 361 208 296 320 301 211 316 755 4 410 44 725 519 258 409 501 80 345 153 131 280 321 337 56 591 306 232 54 6 26 360 29 290 234 731 479 723 744 333 161 14 292 8 785 24 12 23</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\IOT Module\LTE Module\lte_module_config_common.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 274</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 771</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 80 665 208 501 211 161 492 658 425 504 258 701 409 280 591 301 316 689 713 153 402 725 131 337 238 416 54 645 244 686 699 734 432 296 324 407 519 410 56 328 234 731 479 723 744 333 231 474 210 669 783 657 651 698 693 702 704 717 320 361 422 647 670 654 695 680 691 696 700 679 684 735 728 715 675 306 232 44 673</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\hal\sourse\rs485_transmission\rs485_communication_transmission.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 82</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 348</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 211 492 501 23 340 301 8 733 258 680 631 479 607 715 658 343 360 482 80 725 234 425 647 679 410 14 409 407 469 565 26 606 723 238 333 306 296 731 161 280 416 231 422 654 696 735 24 1 405 507 249 153 29 557 464 347 361 56 208 54 316 645 670 695 691 700 684 728 675 12 785 591 542 791 744 432 328 474 210 669 783 244 657 665 651 686 698 689 693 699 702 701 704 734 717 713 4 337 6 345 402 44 673 633 98 460</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_crc.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 268</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 502</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 686 734 56 422 699 658 425 54 665 689 701 713 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_pwr.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 738</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 325</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 715 658 492 238 680 669 301 647 679 783 654 696 735 210 244 501 258 670 695 691 700 684 728 675 425 645 56 422 54 657 665 651 686 698 689 693 699 702 701 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_dvp.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 411</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 172</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 56 699 658 422 686 734 425 54 665 689 701 713 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_qspi.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 90</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 777</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 258 675 691 658 425 670 684 210 244 501 695 700 728 492 669 783 238 301 647 654 680 696 679 735 715 645 56 422 54 657 665 651 686 698 689 693 699 702 701 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_dma.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 362</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 304</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 301 702 657 658 645 698 717 492 651 693 704 425 56 422 54 665 686 689 699 701 734 713 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_gpio.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 312</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 466</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 698 645 717 301 657 702 658 492 651 693 704 425 56 422 54 665 686 689 699 701 734 713 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_rtc.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 116</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 117</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 689 425 54 713 658 665 701 56 422 686 699 734 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_opamp.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 741</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 759</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 695 210 728 658 244 501 700 425 258 670 691 684 675 492 669 783 238 301 647 654 680 696 679 735 715 701 645 56 422 54 657 665 651 686 698 689 693 699 702 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_dbg.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 443</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 322</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 665 701 425 54 689 713 658 56 422 686 699 734 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_eth.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 214</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 751</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 665 701 658 425 54 689 713 56 422 686 699 734 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_flash.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 175</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 51</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 422 658 56 699 686 734 425 54 665 689 701 713 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_exti.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 383</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 365</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 686 734 658 56 422 699 425 54 665 689 701 713 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_i2c.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 185</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 447</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 658 654 783 492 735 696 669 238 301 647 680 679 715 210 244 501 258 670 695 691 700 684 728 675 425 701 645 56 422 54 657 665 651 686 698 689 693 699 702 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_rcc.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 779</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 413</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 658 507 422 56 699 460 686 734 425 54 665 689 701 713 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675 633 631 343 340</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_sdio.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 200</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 390</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 651 492 704 693 645 301 657 698 702 717 658 425 56 422 54 665 686 689 699 701 734 713 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_spi.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 265</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 344</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 695 210 728 244 501 700 425 658 258 670 691 684 675 492 669 783 238 301 647 654 680 696 679 735 715 701 645 56 422 54 657 665 651 686 698 689 693 699 702 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_iwdg.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 462</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 256</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 680 492 238 715 658 669 301 647 679 783 654 696 735 210 244 501 258 670 695 691 700 684 728 675 425 645 56 422 54 657 665 651 686 698 689 693 699 702 701 704 734 717 713</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_tsc.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 403</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 753</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 658 691 258 675 670 684 210 244 501 695 700 728 425 492 669 783 238 301 647 654 680 696 679 735 715 713 645 56 422 54 657 665 651 686 698 689 693 699 702 701 704 734 717</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\portable\IAR\ARM_CM4F\port.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 308</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 526</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 258 333 492 280 731 501 301 296 54 56 238 234 479 211 723 744 208 80 316 161</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\list.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 85</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 136</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 238 492 501 232 296 301 258 161 211 56 208 723 744 54 131 234 731 479 316 80 333</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_tim.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 123</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 399</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 698 645 717 301 657 702 658 492 651 693 704 425 56 422 54 665 686 689 699 701 734 713 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_xfmc.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 72</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 42</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 713 425 658 54 689 665 701 56 422 686 699 734 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\timers.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 143</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 218</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 211 479 231 501 234 301 333 296 56 731 316 80 280 539 232 238 258 492 208 723 744 54 131 161</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_wwdg.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 219</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 162</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 657 301 702 645 698 717 492 651 693 704 658 425 56 422 54 665 686 689 699 701 734 713 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\event_groups.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 62</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 319</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 238 234 539 301 479 501 54 296 232 258 731 211 316 80 280 191 56 492 208 723 744 333 161 131</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\tasks.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 711</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 302</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 208 316 56 280 211 301 501 152 306 492 80 153 296 539 232 238 258 234 731 479 333 161 131 723 744 54</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\croutine.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 752</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 38</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 501 492 744 208 54 301 723 280 234 731 479 211 56 296 388 238 258 316 80 333 161</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\portable\MemMang\heap_4.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 186</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 282</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 208 238 301 723 296 232 501 744 54 280 211 258 492 131 56 234 731 479 316 80 333 161</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\freertos_user_config.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 293</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 59</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 416 492 301 296 153 280 208 211 54 410 234 731 479 501 56 316 80 725 238 258 723 744 333 161 231 306</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\stream_buffer.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 503</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 342</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 501 316 280 492 80 301 56 208 333 161 153 296 245 238 258 211 306 234 731 479 723 744 54</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\queue.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 428</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 476</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 238 234 301 333 280 232 479 211 258 501 731 316 80 161 153 296 231 56 306 492 208 723 744 54 131</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\mcu\peripheral\src\n32g45x_usart.c</name>
+            <outputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 262</file>
+                </tool>
+                <tool>
+                    <name>__cstat</name>
+                    <file> 329</file>
+                </tool>
+            </outputs>
+            <inputs>
+                <tool>
+                    <name>BICOMP</name>
+                    <file> 665 701 425 54 689 713 658 56 422 686 699 734 645 492 301 657 651 698 693 702 704 717 210 669 783 244 501 238 258 647 670 654 695 680 691 696 700 679 684 735 728 715 675</file>
+                </tool>
+            </inputs>
+        </file>
+        <file>
+            <name>$PROJ_DIR$\source\rtos\freertos\kernel\portable\IAR\ARM_CM4F\portasm.s</name>
+            <outputs>
+                <tool>
+                    <name>AARM</name>
+                    <file> 453</file>
+                </tool>
+            </outputs>
+        </file>
+        <forcedrebuild>
+            <name>[REBUILD_ALL]</name>
+        </forcedrebuild>
+    </configuration>
+    <configuration>
+        <name>Release</name>
+        <outputs />
+        <forcedrebuild>
+            <name>[MULTI_TOOL]</name>
+            <tool>ILINK</tool>
+        </forcedrebuild>
+        <forcedrebuild>
+            <name>[REBUILD_ALL]</name>
+        </forcedrebuild>
+    </configuration>
+</project>

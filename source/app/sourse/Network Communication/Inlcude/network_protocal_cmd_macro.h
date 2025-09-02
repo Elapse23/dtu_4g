@@ -1,0 +1,100 @@
+#ifndef _NETWORK_PROTOCAL_CMD_MACRO_H_
+#define _NETWORK_PROTOCAL_CMD_MACRO_H_
+
+//Network Error Code
+#define     cb_net_error_code_none               0xFFFF
+#define     cbNetCmdOK                           0
+#define     cbProtocolVerError                   1
+#define     cbSysTypeError                       2
+#define     cbOperatAddrError                    3
+#define     cbDataLenError                       4
+#define     cbBodyDataError                      5
+#define     cbSetError                           6
+#define     cbControlError                       7
+#define     cbStartUpdateError                   8
+#define     cbStopUpdateError                    9
+#define     cbUpdateTypeError                    10
+#define     cbUpdatePackageSumError              11
+#define     cbCenterOnlyHaveBoot                 12
+#define     cbMCUTypeNotSupport                  13
+#define     cbMCUTypeError                       14
+#define     cbFirmwareIDNotSupport               15
+#define     cbFirmwareIDError                    16
+#define     cbUpdatePackageNumError              17
+#define     cbFirmwareDataError                  18
+#define     cbNetCHNotLogin                      19
+#define     cbPackageOperateError                20
+#define     cbUpdateShutDown                     21
+#define     cbFlashEraseError                    22
+#define     cbGetLogsError                       23
+#define     cbUpdateFlashing                     24
+#define     cbUpdateUUIDError                    25
+#define     cbTargetAddrOpeForbid                26
+#define     cbFTPEraseFlash                      27
+
+//Network Operate Code
+#define     cw_NetConnect                        0x0010
+#define     cw_NetConnectAck                     0x0011
+#define     cw_NetRealTimeData                   0x0020
+#define     cw_NetRealTimeDataAck                0x0021
+#define     cw_NetOffLineRealTimeData            0x0022
+#define     cw_NetOffLineRealTimeDataAck         0x0023
+#define     cw_NetSetting                        0x0030
+#define     cw_NetSettingAck                     0x0031
+#define     cw_NetControl                        0x0040
+#define     cw_NetControlAck                     0x0041
+#define     cw_NetInquire                        0x0050
+#define     cw_NetInquireAck                     0x0051
+#define     cw_NetInquire_Discrete				 0x0052
+#define     cw_NetInquire_DiscreteAck			 0x0053
+#define     cw_NetCostRenew                      0x0060
+#define     cw_NetCostRenewAck                   0x0061
+#define     cw_NetUpdateStart_Stop               0x0070
+#define     cw_NetUpdateStart_StopAck            0x0071
+#define     cw_NetUpdating                       0x0072
+#define     cw_NetUpdatingAck                    0x0073
+#define     cw_NetUpdateFirmList                 0x0074
+#define     cw_NetUpdateFirmListAck              0x0075
+#define     cw_NetAskForUpdate                   0x0076
+#define     cw_NetAskForUpdateAck                0x0077
+
+#define     cw_NetIPSet                          0x0080
+#define     cw_NetIPSetAck                       0x0081
+#define     cw_NetTimeSynchr                     0x0090
+#define     cw_NetTimeSynchrAck                  0x0091
+#define     cw_NetInquireAttribute               0x00A0
+#define     cw_NetInquireAttributeAck            0x00A1
+#define     cw_NetGetAttributeTree_Discrete		 0x00E8
+#define     cw_NetGetAttributeTree_DiscreteAck	 0x00E9
+#define     cw_NetGetAttributeTree               0x00A2
+#define     cw_NetGetAttributeTreeAck            0x00A3
+#define     cw_SendAttributeTreeSeg              0x00A4
+#define     cw_SendAttributeTreeSegACK           0x00A5
+#define     cw_SendOffLineAttributeTreeSeg       0x00A6
+#define     cw_SendOffLineAttributeTreeSegACK    0x00A7
+#define     cw_NetHeartbeat                      0x00B0
+#define     cw_NetHeartbeatAck                   0x00B1
+#define     cw_NetAdvPassChk                     0x00C0
+#define     cw_NetAdvPassChkAck                  0x00C1
+#define     cw_NetSendNewLogs                    0x00D0
+#define     cw_NetSendNewLogsAck                 0x00D1
+#define     cw_NetGetLogs                        0x00D2
+#define     cw_NetGetLogsAck                     0x00D3
+#define     cw_NetGetLogsContinue                0x00D4
+#define     cw_NetGetLogsContinueAck             0x00D5
+#define     cw_NetRealTimeDataActivePush         0x00D6
+#define     cw_FTPing                            0x00E4
+#define     cw_FTPingAck                         0x00E5
+#define     cw_FTPData                           0x00E6
+#define     cw_SendSetAttributeTreeSeg           0xFFA4
+
+#define     cw_NetTestTransparent                0xFF00
+#define     cw_NetTestTransparentAck             0xFF01
+#define     cw_NetTestGetAddrData                0xFF02
+#define     cw_NetTestGetAddrDataAck             0xFF03
+#define     cw_NetTestWriteAddrData              0xFF04
+#define     cw_NetTestWriteAddrDataAck           0xFF05
+
+#define     cb_MaxNetCmdType                     47
+
+#endif

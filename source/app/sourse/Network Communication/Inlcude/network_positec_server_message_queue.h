@@ -1,0 +1,11 @@
+#ifndef _NETWORK_POSITEC_SERVER_MESSAGE_QUEUE_H_
+#define _NETWORK_POSITEC_SERVER_MESSAGE_QUEUE_H_
+
+#include "msg_queue_operate.h"
+
+uint8_t network_positec_server_message_queue_send(pv_queue_operate_msg pv_queue_data);
+uint8_t network_positec_server_message_queue_receive(pv_queue_operate_msg pv_queue_data,uint8_t f_shift_queue);
+uint8_t network_positec_server_message_queue_shift();
+void network_positec_server_message_queue_init();
+
+#endif

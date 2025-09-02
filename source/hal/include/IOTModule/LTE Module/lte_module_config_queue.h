@@ -1,0 +1,15 @@
+#ifndef _LTE_MODULE_CONFIG_QUEUE_H_
+#define _LTE_MODULE_CONFIG_QUEUE_H_
+
+uint8_t lte_module_config_queue_send(pv_queue_operate_msg pv_queue_data);
+uint8_t lte_module_config_queue_receive(pv_queue_operate_msg pv_queue_data,uint8_t f_shift_queue);
+uint8_t lte_module_config_queue_shift();
+uint8_t lte_module_config_queue_clear();
+
+uint8_t lte_module_driver_config_queue_send(pv_queue_operate_msg pv_queue_data);
+uint8_t lte_module_driver_config_queue_receive(pv_queue_operate_msg pv_queue_data,uint8_t f_shift_queue);
+
+void lte_module_config_queue_init();
+void lte_module_driver_config_queue_init();
+
+#endif

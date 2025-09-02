@@ -1,0 +1,14 @@
+#ifndef _SPI_FLASH_OPERATE_QUEUE_H_
+#define _SPI_FLASH_OPERATE_QUEUE_H_
+
+#include "msg_queue_operate.h"
+
+uint8_t spi_flash_operate_initiate_queue_send(pv_queue_operate_msg pv_queue_data);
+uint8_t spi_flash_operate_initiate_queue_receive(pv_queue_operate_msg pv_queue_data,uint8_t f_shift_queue);
+uint8_t spi_flash_operate_response_queue_send(pv_queue_operate_msg pv_queue_data);
+uint8_t spi_flash_operate_response_queue_receive(pv_queue_operate_msg pv_queue_data,uint8_t f_shift_queue);
+uint8_t spi_flash_operate_initiate_queue_shift();
+uint8_t spi_flash_operate_response_queue_shift();
+void spi_flash_operate_queue_init();
+
+#endif

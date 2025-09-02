@@ -1,0 +1,16 @@
+#ifndef _NET_DEVICE_STATUS_CKLCD_H_
+#define _NET_DEVICE_STATUS_CKLCD_H_
+
+#include "net_device_status.h"
+
+extern net_device_status st_net_device_status_cklcd_u1;
+extern net_device_status st_net_device_status_cklcd_u2;
+extern net_device_status st_net_device_status_cklcd_u3;
+extern net_device_status st_net_device_status_cklcd_v1;
+extern net_device_status st_net_device_status_cklcd_v2;
+extern net_device_status st_net_device_status_cklcd_v3;
+extern net_device_status st_net_device_status_cklcd_w1;
+extern net_device_status st_net_device_status_cklcd_w2;
+extern net_device_status st_net_device_status_cklcd_w3;
+
+#endif

@@ -1,0 +1,15 @@
+"D:\IAR\IAR Systems\Embedded Workbench 8.1\arm\bin\armproc.dll" 
+
+"D:\IAR\IAR Systems\Embedded Workbench 8.1\arm\bin\armjlink2.dll" 
+
+"D:\work\my_git\kinergy\Debug\Exe\kinergy_ii.out" 
+
+--plugin="D:\IAR\IAR Systems\Embedded Workbench 8.1\arm\bin\armbat.dll" 
+
+--device_macro="D:\IAR\IAR Systems\Embedded Workbench 8.1\arm\config\debugger\Nations\N32G45x\N32G45x.dmac" 
+
+--flash_loader="D:\IAR\IAR Systems\Embedded Workbench 8.1\arm\config\flashloader\Nations\N32G455xE\N32G455xE.board" 
+
+
+
+

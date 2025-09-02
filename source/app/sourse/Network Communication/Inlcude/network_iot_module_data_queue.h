@@ -1,0 +1,21 @@
+#ifndef _NETWORK_IOT_MODULE_DATA_QUEUE_H_
+#define _NETWORK_IOT_MODULE_DATA_QUEUE_H_
+
+#include "msg_queue_operate.h"
+#include <stdint.h>
+
+uint8_t network_iot_module_data_queue_send(pv_queue_operate_msg pv_queue_data);
+uint8_t network_iot_module_data_queue_receive(pv_queue_operate_msg pv_queue_data,uint8_t f_shift_queue);
+uint8_t network_iot_module_data_queue_shift();
+void network_iot_module_data_queue_init();
+uint8_t network_iot_ble_module_data_queue_receive(pv_queue_operate_msg pv_queue_data,uint8_t f_shift_queue);
+uint8_t network_iot_ble_module_data_queue_send(pv_queue_operate_msg pv_queue_data);
+uint8_t network_iot_ble_module_data_queue_shift();
+
+uint8_t network_iot_wifi_module_data_queue_send(pv_queue_operate_msg pv_queue_data);
+uint8_t network_iot_wifi_module_data_queue_receive(pv_queue_operate_msg pv_queue_data,uint8_t f_shift_queue);
+uint8_t network_iot_wifi_module_data_queue_shift();
+
+
+
+#endif

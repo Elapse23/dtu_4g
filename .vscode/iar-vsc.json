@@ -1,0 +1,18 @@
+{
+  "workspace": {
+    "path": "${workspaceFolder}\\kinergy_ii_4g.eww"
+  },
+  "workspaces": {
+    "${workspaceFolder}\\kinergy_ii_4g.eww": {
+      "configs": {
+        "${workspaceFolder}\\kinergy_ii_4g.ewp": "Debug"
+      },
+      "selected": {
+        "path": "${workspaceFolder}\\kinergy_ii_4g.ewp"
+      }
+    }
+  },
+  "workbench": {
+    "path": "d:\\IAR\\IAR Systems\\Embedded Workbench 8.1"
+  }
+}

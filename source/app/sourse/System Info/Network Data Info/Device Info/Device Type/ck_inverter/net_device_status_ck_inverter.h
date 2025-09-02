@@ -1,0 +1,16 @@
+#ifndef _NET_DEVICE_STATUS_CK_INVERTER_H_
+#define _NET_DEVICE_STATUS_CK_INVERTER_H_
+
+#include "net_device_status.h"
+
+extern net_device_status st_net_device_status_ck_inverter_u1;
+extern net_device_status st_net_device_status_ck_inverter_u2;
+extern net_device_status st_net_device_status_ck_inverter_u3;
+extern net_device_status st_net_device_status_ck_inverter_v1;
+extern net_device_status st_net_device_status_ck_inverter_v2;
+extern net_device_status st_net_device_status_ck_inverter_v3;
+extern net_device_status st_net_device_status_ck_inverter_w1;
+extern net_device_status st_net_device_status_ck_inverter_w2;
+extern net_device_status st_net_device_status_ck_inverter_w3;
+
+#endif

@@ -1,0 +1,140 @@
+/*###ICF### Section handled by ICF editor, don't touch! ****/
+/*-Editor annotation file-*/
+/* IcfEditorFile="$TOOLKIT_DIR$\config\ide\IcfEditor\cortex_v1_4.xml" */
+/*-Specials-*/
+define symbol __ICFEDIT_intvec_start__ = 0x08000000;
+/*-Memory Regions-*/
+define symbol __ICFEDIT_region_IROM1_start__ = 0x08000000;
+define symbol __ICFEDIT_region_IROM1_end__   = 0x08004FFF;//boot 20K
+define symbol __ICFEDIT_region_IROM2_start__ = 0x08005000;
+define symbol __ICFEDIT_region_IROM2_end__   = 0x0807BFFF;//app 476K
+define symbol __ICFEDIT_region_IROM3_start__ = 0x0807C000;
+define symbol __ICFEDIT_region_IROM3_end__   = 0x0807FFFF;//reserve 32K
+define symbol __ICFEDIT_region_EROM1_start__ = 0x0;
+define symbol __ICFEDIT_region_EROM1_end__   = 0x0;
+define symbol __ICFEDIT_region_EROM2_start__ = 0x0;
+define symbol __ICFEDIT_region_EROM2_end__   = 0x0;
+define symbol __ICFEDIT_region_EROM3_start__ = 0x0;
+define symbol __ICFEDIT_region_EROM3_end__   = 0x0;
+define symbol __ICFEDIT_region_IRAM1_start__ = 0x20000000;
+define symbol __ICFEDIT_region_IRAM1_end__   = 0x20023FFF;
+define symbol __ICFEDIT_region_IRAM2_start__ = 0x0;
+define symbol __ICFEDIT_region_IRAM2_end__   = 0x0;
+define symbol __ICFEDIT_region_ERAM1_start__ = 0x0;
+define symbol __ICFEDIT_region_ERAM1_end__   = 0x0;
+define symbol __ICFEDIT_region_ERAM2_start__ = 0x0;
+define symbol __ICFEDIT_region_ERAM2_end__   = 0x0;
+define symbol __ICFEDIT_region_ERAM3_start__ = 0x0;
+define symbol __ICFEDIT_region_ERAM3_end__   = 0x0;
+
+/* symbol self configration start */
+
+define symbol __copy_ram_code_start__     = 0x8000200;         
+define symbol __copy_ram_code_end__       = 0x8003aff;//0x8002dFF;      
+
+
+define symbol __BOOTLOADER_FLASH_ROM_start__    = __copy_ram_code_end__ + 1 ;
+define symbol __BOOTLOADER_FLASH_ROM_end__      = __ICFEDIT_region_IROM1_end__;
+
+define symbol __APP_VERSION_start__             = __BOOTLOADER_FLASH_ROM_end__ + 1;
+define symbol __APP_MARK_start__                = __APP_VERSION_start__ + 4;
+define symbol __code_start__                    = __APP_MARK_start__+4;
+define symbol __code_end__                      = __ICFEDIT_region_IROM2_end__;
+
+define symbol __BOOTLOADER2_FLASH_ROM_start__   = __ICFEDIT_region_IROM3_start__;
+define symbol __BOOTLOADER2_FLASH_ROM_end__     = __ICFEDIT_region_IROM3_end__;
+
+/* symbol self configration end */
+
+/*-Sizes-*/
+define symbol __ICFEDIT_size_cstack__     = 0x1500;
+define symbol __ICFEDIT_size_proc_stack__ = 0x0;
+define symbol __ICFEDIT_size_heap__       = 0x200;
+/**** End of ICF editor section. ###ICF###*/
+
+define memory mem with size = 4G;
+define region IROM_region   =   mem:[from __ICFEDIT_region_IROM2_start__ to __ICFEDIT_region_IROM2_end__];
+                             // | mem:[from __ICFEDIT_region_IROM2_start__ to __ICFEDIT_region_IROM2_end__];
+define region EROM_region   =   mem:[from __ICFEDIT_region_EROM1_start__ to __ICFEDIT_region_EROM1_end__]
+                              | mem:[from __ICFEDIT_region_EROM2_start__ to __ICFEDIT_region_EROM2_end__]
+                              | mem:[from __ICFEDIT_region_EROM3_start__ to __ICFEDIT_region_EROM3_end__];
+define region IRAM_region   =   mem:[from __ICFEDIT_region_IRAM1_start__ to __ICFEDIT_region_IRAM1_end__]
+                              | mem:[from __ICFEDIT_region_IRAM2_start__ to __ICFEDIT_region_IRAM2_end__];
+define region ERAM_region   =   mem:[from __ICFEDIT_region_ERAM1_start__ to __ICFEDIT_region_ERAM1_end__]
+                              | mem:[from __ICFEDIT_region_ERAM2_start__ to __ICFEDIT_region_ERAM2_end__]
+                              | mem:[from __ICFEDIT_region_ERAM3_start__ to __ICFEDIT_region_ERAM3_end__];
+
+/* memory self configration start */
+define region copy_ram_code_region    = mem:[from  __copy_ram_code_start__ to __copy_ram_code_end__];
+define region BOOTLOADER_region       = mem:[from __BOOTLOADER_FLASH_ROM_start__ to __BOOTLOADER_FLASH_ROM_end__];
+define region BOOTLOADER2_region      = mem:[from __BOOTLOADER2_FLASH_ROM_start__ to __BOOTLOADER2_FLASH_ROM_end__];
+
+/* memory self configration end */
+
+define block CSTACK     with alignment = 8, size = __ICFEDIT_size_cstack__     { };
+define block PROC_STACK with alignment = 8, size = __ICFEDIT_size_proc_stack__ { };
+define block HEAP       with alignment = 8, size = __ICFEDIT_size_heap__       { };
+
+// define block CodeRelocate               { section .textrw_init };
+// define block CodeRelocateRam            { section .textrw };
+// define block ApplicationFlash           { readonly, block CodeRelocate };
+// define block ApplicationRam             { readwrite, block CodeRelocateRam, block HEAP };
+//initialize manually { readwrite };
+// initialize manually { section .data};
+// initialize manually { section .textrw };
+do not initialize  { section .noinit };
+initialize by copy { readwrite };
+if (isdefinedsymbol(__USE_DLIB_PERTHREAD))
+{
+  // Required in a multi-threaded application
+  initialize by copy with packing = none { section __DLIB_PERTHREAD };
+}
+// place in ROM_region          { block ApplicationFlash };
+// place in RAM_region          { block ApplicationRam };
+// place in STACK_region        { block CSTACK }
+
+place at address mem:__ICFEDIT_intvec_start__ { readonly section .intvec };
+
+place in IROM_region  { readonly };
+place in EROM_region  { readonly section application_specific_ro };
+place in IRAM_region  { readwrite, block CSTACK, block PROC_STACK, block HEAP };
+place in ERAM_region  { readwrite section application_specific_rw };
+
+/* self place at sections and blocks start */
+place at address mem:__APP_MARK_start__ { readonly section ApplicationMark };
+place at address mem:__code_start__ { 
+readonly section .approm,
+readonly object   InterruptJmpTable.o,
+ readonly object   data_init.o,
+ readonly object   zero_init3.o,
+// readonly object   copy_init3.o,
+ readonly object   fpinit_M.o,
+ readonly object   cmain.o,
+ readonly object   exit.o,
+// readonly object   strlen.o,
+// readonly object   strstr.o,
+};
+place at address mem:__BOOTLOADER_FLASH_ROM_start__ { readonly section .resetrom }; //,readonly section .iar.init_table}; 
+place at address mem:__BOOTLOADER2_FLASH_ROM_start__ { readonly section .resetrom2 };
+/* self place at sections and blocks end */
+
+/* self place in sections and blocks start */
+place in copy_ram_code_region{
+readonly object BootloaderAsmFuncs.o,
+readonly object BootFlashCode.o,
+readonly object BootSpiFlashCode.o,
+readonly object BootUARTCode.o,
+//readonly object BootCANCode.o,
+readonly object drv_vsprintf.o,
+readonly object drv_log.o,
+};
+place in BOOTLOADER_region { 
+//readonly object strchr.o,  
+//readonly object system_n32g45x.o,
+readonly object BootIICCode.c,
+readonly object BootLoader.o, 
+};
+
+
+
+/* self place in sections and blocks end */
