@@ -1,0 +1,50 @@
+{
+  "version": 4,
+  "configurations": [
+    {
+      "name": "N32G45x-Keil",
+      "intelliSenseMode": "gcc-arm",
+      "compilerPath": "",
+      "cStandard": "c11",
+      "cppStandard": "c++17",
+      "includePath": [
+        "${workspaceFolder}/.vscode/shims",
+        "${workspaceFolder}/Project/MDK_KinergyII4G/Source/**",
+        "${workspaceFolder}/Project/MDK_KinergyII4G/RTE/**",
+        "${workspaceFolder}/Firmware/**",
+        "${workspaceFolder}/Firmware/CMSIS/core",
+        "${workspaceFolder}/Firmware/CMSIS/device",
+        "${workspaceFolder}/Firmware/n32g45x_std_periph_driver/inc",
+        "${workspaceFolder}/FreeRTOS/include",
+        "${workspaceFolder}/FreeRTOS/portable/RVDS/ARM_CM4F",
+        "${workspaceFolder}/FreeRTOS/portable/MemMang"
+      ],
+      "forcedInclude": [
+        "${workspaceFolder}/Project/MDK_KinergyII4G/RTE/_N32G455RE_EVAL/RTE_Components.h"
+      ],
+      "defines": [
+  "_DEBUG",
+  "N32G45X",
+        "ARM_MATH_CM4",
+        "USE_FULL_ASSERT=0",
+        "USE_STDPERIPH_DRIVER"
+      ],
+      "browse": {
+        "path": [
+          "${workspaceFolder}/.vscode/shims",
+          "${workspaceFolder}/Project/MDK_KinergyII4G/Source",
+          "${workspaceFolder}/Project/MDK_KinergyII4G/RTE",
+          "${workspaceFolder}/Firmware",
+          "${workspaceFolder}/Firmware/CMSIS/core",
+          "${workspaceFolder}/Firmware/CMSIS/device",
+          "${workspaceFolder}/Firmware/n32g45x_std_periph_driver/inc",
+          "${workspaceFolder}/FreeRTOS/include",
+          "${workspaceFolder}/FreeRTOS/portable/RVDS/ARM_CM4F",
+          "${workspaceFolder}/FreeRTOS/portable/MemMang"
+        ],
+        "limitSymbolsToIncludedHeaders": false,
+        "databaseFilename": "${workspaceFolder}/.vscode/browse.vc.db"
+      }
+    }
+  ]
+}

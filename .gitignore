@@ -1,0 +1,38 @@
+# Build output
+output/
+list/
+*.hex
+*.bin
+*.elf
+*.map
+*.srec
+
+# Debug and log files
+JLinkLog.txt
+JLinkSettings.ini
+*.scvd
+
+# Keil MDK files
+*.uvguix*
+*.uvoptx
+*.bak
+*.dep
+*.d
+*.crf
+*.htm
+*.lnp
+*.lst
+*.plg
+
+# VS Code - exclude database and cache files but keep project settings
+.vscode/*.db
+.vscode/browse.vc.db*
+.vscode/ipch/
+.vscode/c_cpp_properties.json.bak
+
+# Keep these VS Code files for team collaboration:
+# .vscode/settings.json
+# .vscode/tasks.json
+# .vscode/launch.json
+# .vscode/c_cpp_properties.json
+# .vscode/extensions.json
