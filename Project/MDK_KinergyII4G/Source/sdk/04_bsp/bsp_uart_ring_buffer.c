@@ -13,6 +13,7 @@
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
+#include "portmacro.h"
 #include "n32g45x.h"
 #include <string.h>
 #include <stdio.h>
@@ -27,6 +28,12 @@ static uint8_t log_tx_buffer_storage[UART_TX_BUFFER_SIZE];
 
 // 串口设备实例
 static UART_RingBuffer_t uart_devices[UART_COUNT];
+
+// 内部函数声明
+static Serial_Status_t init_uart_hardware(void* uart_instance, uint32_t baudrate);
+static Serial_Status_t deinit_uart_hardware(void* uart_instance);
+static UART_RingBuffer_t* get_uart_device(UART_ID_t uart_id);
+static UART_Status_t UART_RingBuffer_SendPolling(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms);
 
 /**
  * @brief 初始化串口硬件（适配现有驱动）
@@ -225,6 +232,25 @@ UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint3
         return UART_ERR_PARAM;
     }
     
+    // 增加信号量有效性检查
+    if (!uart_dev->tx_mutex || !uart_dev->tx_complete_semaphore) {
+        return UART_ERR_INIT;
+    }
+    
+    // 检查 FreeRTOS 调度器状态
+    BaseType_t scheduler_state = xTaskGetSchedulerState();
+    if (scheduler_state == taskSCHEDULER_NOT_STARTED) {
+        // 调度器未启动，使用轮询方式发送
+        return UART_RingBuffer_SendPolling(uart_id, data, length, timeout_ms);
+    } else if (scheduler_state != taskSCHEDULER_RUNNING) {
+        return UART_ERR_INIT;
+    }
+    
+    // 限制超时时间范围，防止溢出
+    if (timeout_ms > 60000) {  // 最大60秒
+        timeout_ms = 60000;
+    }
+    
     // 获取发送互斥锁
     if (xSemaphoreTake(uart_dev->tx_mutex, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
         return UART_ERR_TIMEOUT;
@@ -249,12 +275,23 @@ UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint3
         // 启动发送，发送缓冲区中的第一个字节
         uint8_t tx_byte;
         if (RingBuffer_Read(&uart_dev->tx_ring_buffer, &tx_byte) == RB_OK) {
-        // 使能发送中断
-        USART_ConfigInt((USART_Module*)uart_dev->uart_instance, USART_INT_TXDE, ENABLE);
-        // 发送第一个字节
-        USART_SendData((USART_Module*)uart_dev->uart_instance, tx_byte);            // 等待发送完成
-            if (xSemaphoreTake(uart_dev->tx_complete_semaphore, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
-                result = UART_ERR_TIMEOUT;
+            // 安全检查：确保信号量有效
+            if (uart_dev->tx_complete_semaphore == NULL) {
+                result = UART_ERR_INIT;
+            } else {
+                // 使能发送中断
+                USART_ConfigInt((USART_Module*)uart_dev->uart_instance, USART_INT_TXDE, ENABLE);
+                // 发送第一个字节
+                USART_SendData((USART_Module*)uart_dev->uart_instance, tx_byte);
+                // 等待发送完成 - 检查是否在中断中调用
+                if (xPortIsInsideInterrupt() == pdTRUE) {
+                    // 在中断中不能使用阻塞API
+                    result = UART_ERR_BUSY;
+                } else {
+                    if (xSemaphoreTake(uart_dev->tx_complete_semaphore, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
+                        result = UART_ERR_TIMEOUT;
+                    }
+                }
             }
         }
         
@@ -270,6 +307,63 @@ UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint3
     xSemaphoreGive(uart_dev->tx_mutex);
     
     return result;
+}
+
+/**
+ * @brief 轮询方式发送数据（用于调度器未启动时）
+ * @param uart_id 串口ID
+ * @param data 要发送的数据
+ * @param length 数据长度
+ * @param timeout_ms 超时时间（毫秒）
+ * @return UART_Status_t 状态码
+ */
+static UART_Status_t UART_RingBuffer_SendPolling(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms) {
+    UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
+    if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) {
+        return UART_ERR_PARAM;
+    }
+    
+    USART_Module* USARTx = (USART_Module*)uart_dev->uart_instance;
+    
+    // RS485需要切换到发送模式
+    if (uart_id == UART_ID_RS485) {
+        RS485_DIR_TX();
+    }
+    
+    // 逐字节发送
+    for (uint32_t i = 0; i < length; i++) {
+        // 等待发送缓冲区空
+        uint32_t timeout_count = timeout_ms * 1000; // 粗略的超时计数
+        while (USART_GetFlagStatus(USARTx, USART_FLAG_TXDE) == RESET) {
+            if (timeout_count-- == 0) {
+                if (uart_id == UART_ID_RS485) {
+                    RS485_DIR_RX();
+                }
+                return UART_ERR_TIMEOUT;
+            }
+        }
+        
+        // 发送字节
+        USART_SendData(USARTx, data[i]);
+    }
+    
+    // 等待发送完成
+    uint32_t timeout_count = timeout_ms * 1000;
+    while (USART_GetFlagStatus(USARTx, USART_FLAG_TXC) == RESET) {
+        if (timeout_count-- == 0) {
+            if (uart_id == UART_ID_RS485) {
+                RS485_DIR_RX();
+            }
+            return UART_ERR_TIMEOUT;
+        }
+    }
+    
+    // RS485发送完成后切换回接收模式
+    if (uart_id == UART_ID_RS485) {
+        RS485_DIR_RX();
+    }
+    
+    return UART_OK;
 }
 
 /**

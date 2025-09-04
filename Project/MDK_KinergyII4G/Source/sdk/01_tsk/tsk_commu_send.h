@@ -5,7 +5,7 @@
  * @author      23Elapse & GitHub Copilot
  * @version     1.0
  * @date        2025-09-03
- * @note        ESP AT命令发送和RS485数据发送任务接口
+ * @note        4G AT命令发送和RS485数据发送任务接口
  * =====================================================================================
  */
 
@@ -16,14 +16,14 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/* ESP状态枚举 */
+/* 4G模块状态枚举 */
 typedef enum {
-    ESP_STATE_IDLE = 0,         // 空闲状态
-    ESP_STATE_CONNECTING,       // 连接中
-    ESP_STATE_CONNECTED,        // 已连接
-    ESP_STATE_SENDING,          // 发送中
-    ESP_STATE_ERROR             // 错误状态
-} EspState_t;
+    MODEM_STATE_IDLE = 0,       // 空闲状态
+    MODEM_STATE_CONNECTING,     // 连接中
+    MODEM_STATE_CONNECTED,      // 已连接
+    MODEM_STATE_SENDING,        // 发送中
+    MODEM_STATE_ERROR           // 错误状态
+} ModemState_t;
 
 /* 公共函数声明 */
 
@@ -42,14 +42,14 @@ void vCommuSendTask(void* pvParameters);
 BaseType_t CommuSend_Init(void);
 
 /**
- * @brief 发送ESP AT命令
+ * @brief 发送4G AT命令
  * @param command AT命令字符串（不需要包含\r\n）
  * @param expected_response 期望的响应字符串，NULL表示不等待响应
  * @param timeout_ms 超时时间（毫秒）
  * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
  * @note 命令会被加入发送队列异步处理
  */
-BaseType_t CommuSend_EspAtCommand(const char* command, const char* expected_response, uint32_t timeout_ms);
+BaseType_t CommuSend_4gAtCommand(const char* command, const char* expected_response, uint32_t timeout_ms);
 
 /**
  * @brief 发送RS485数据
@@ -61,33 +61,33 @@ BaseType_t CommuSend_EspAtCommand(const char* command, const char* expected_resp
 BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length);
 
 /**
- * @brief 获取ESP模块当前状态
- * @return EspState_t ESP状态
+ * @brief 获取4G模块当前状态
+ * @return ModemState_t 4G模块状态
  */
-EspState_t CommuSend_GetEspState(void);
+ModemState_t CommuSend_GetModemState(void);
 
 /**
- * @brief 连接WiFi网络
- * @param ssid WiFi网络名称
- * @param password WiFi密码
- * @return BaseType_t 连接结果 (pdPASS/pdFAIL)
- * @note 这是一个阻塞操作，会等待连接完成
+ * @brief 发送HTTP请求
+ * @param url 请求URL
+ * @param data 请求数据（NULL为GET请求，非NULL为POST请求）
+ * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
+ * @note 支持HTTP GET和POST请求
  */
-BaseType_t CommuSend_ConnectWiFi(const char* ssid, const char* password);
+BaseType_t CommuSend_HttpRequest(const char* url, const char* data);
 
 /* 便捷宏定义 */
 
 /**
- * @brief 发送简单的AT命令（不等待响应）
+ * @brief 发送简单的4G AT命令（不等待响应）
  * @param cmd AT命令字符串
  */
-#define SEND_AT_CMD(cmd)            CommuSend_EspAtCommand(cmd, NULL, 1000)
+#define SEND_4G_CMD(cmd)            CommuSend_4gAtCommand(cmd, NULL, 1000)
 
 /**
- * @brief 发送AT命令并等待OK响应
+ * @brief 发送4G AT命令并等待OK响应
  * @param cmd AT命令字符串
  */
-#define SEND_AT_CMD_OK(cmd)         CommuSend_EspAtCommand(cmd, "OK", 3000)
+#define SEND_4G_CMD_OK(cmd)         CommuSend_4gAtCommand(cmd, "OK", 3000)
 
 /**
  * @brief 发送RS485字符串数据
@@ -95,15 +95,17 @@ BaseType_t CommuSend_ConnectWiFi(const char* ssid, const char* password);
  */
 #define SEND_RS485_STRING(str)      CommuSend_Rs485Data((const uint8_t*)str, strlen(str))
 
-/* 常用ESP AT命令宏 */
-#define ESP_CMD_TEST                "AT"
-#define ESP_CMD_RESET               "AT+RST"
-#define ESP_CMD_VERSION             "AT+GMR"
-#define ESP_CMD_WIFI_MODE_STA       "AT+CWMODE=1"
-#define ESP_CMD_WIFI_MODE_AP        "AT+CWMODE=2"
-#define ESP_CMD_WIFI_MODE_BOTH      "AT+CWMODE=3"
-#define ESP_CMD_WIFI_DISCONNECT     "AT+CWQAP"
-#define ESP_CMD_WIFI_LIST           "AT+CWLAP"
-#define ESP_CMD_GET_IP              "AT+CIFSR"
+/* 常用移远4G AT命令宏 */
+#define QUECTEL_CMD_TEST            "AT"
+#define QUECTEL_CMD_RESET           "AT+CFUN=1,1"
+#define QUECTEL_CMD_VERSION         "ATI"
+#define QUECTEL_CMD_IMEI            "AT+GSN"
+#define QUECTEL_CMD_ICCID           "AT+QCCID"
+#define QUECTEL_CMD_SIGNAL          "AT+CSQ"
+#define QUECTEL_CMD_NETWORK_REG     "AT+CREG?"
+#define QUECTEL_CMD_GPRS_REG        "AT+CGREG?"
+#define QUECTEL_CMD_HTTP_CFG        "AT+QHTTPCFG=\"contextid\",1"
+#define QUECTEL_CMD_ACTIVATE_PDP    "AT+QIACT=1"
+#define QUECTEL_CMD_DEACT_PDP       "AT+QIDEACT=1"
 
 #endif /* __TSK_COMMU_SEND_H */

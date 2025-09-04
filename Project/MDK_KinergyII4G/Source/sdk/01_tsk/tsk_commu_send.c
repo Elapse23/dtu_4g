@@ -15,6 +15,8 @@
 #include "semphr.h"
 #include "bsp_uart_ring_buffer.h"
 #include "bsp_log_manager.h"
+#include "tsk_4g_init.h"
+#include "bsp_watchdog.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -27,7 +29,7 @@
 
 /* 发送消息类型 */
 typedef enum {
-    SEND_TYPE_ESP_AT = 0,       // ESP AT命令
+    SEND_TYPE_4G_AT = 0,        // 4G AT命令
     SEND_TYPE_RS485_DATA,       // RS485数据
     SEND_TYPE_HEARTBEAT,        // 心跳数据
     SEND_TYPE_QUERY            // 查询命令
@@ -44,28 +46,27 @@ typedef struct {
     char expected_response[64]; // 期望的响应
 } SendMessage_t;
 
-/* ESP AT命令状态 */
+/* 4G模块状态 */
 typedef enum {
-    ESP_STATE_IDLE = 0,
-    ESP_STATE_CONNECTING,
-    ESP_STATE_CONNECTED,
-    ESP_STATE_SENDING,
-    ESP_STATE_ERROR
-} EspState_t;
+    MODEM_STATE_IDLE = 0,
+    MODEM_STATE_CONNECTING,
+    MODEM_STATE_CONNECTED,
+    MODEM_STATE_SENDING,
+    MODEM_STATE_ERROR
+} ModemState_t;
 
 /* 静态变量 */
 static QueueHandle_t s_send_queue = NULL;
 static SemaphoreHandle_t s_send_mutex = NULL;
-static EspState_t s_esp_state = ESP_STATE_IDLE;
+static ModemState_t s_modem_state = MODEM_STATE_IDLE;
 static TaskHandle_t s_send_task_handle = NULL;
 
 /* 私有函数声明 */
 static void process_send_message(const SendMessage_t* message);
-static bool send_esp_at_command(const char* command, const char* expected_response, uint32_t timeout_ms);
+static bool send_4g_at_command(const char* command, const char* expected_response, uint32_t timeout_ms);
 static bool send_rs485_data(const uint8_t* data, uint16_t length);
 static bool wait_for_response(UART_ID_t uart_id, const char* expected, uint32_t timeout_ms);
 static void send_heartbeat_data(void);
-static void esp_init_sequence(void);
 
 /**
  * @brief 通信发送任务主函数
@@ -79,11 +80,21 @@ void vCommuSendTask(void* pvParameters)
     
     LOG_INFO(LOG_MODULE_PROTOCOL, "Communication send task started");
     
-    /* ESP模块初始化序列 */
-    esp_init_sequence();
+    /* 等待4G模块初始化完成 */
+    LOG_INFO(LOG_MODULE_PROTOCOL, "Waiting for 4G module initialization...");
+    if (Quectel4G_WaitForReady(60000)) {  // 等待最多60秒
+        LOG_INFO(LOG_MODULE_PROTOCOL, "4G module ready, send task operational");
+        s_modem_state = MODEM_STATE_IDLE;
+    } else {
+        LOG_ERROR(LOG_MODULE_PROTOCOL, "4G module initialization timeout");
+        s_modem_state = MODEM_STATE_ERROR;
+    }
     
     /* 任务主循环 */
     while (1) {
+        /* 喂狗 - 防止看门狗复位 */
+        MACRO_IWDG_RELOAD();
+        
         /* 等待发送队列中的消息 */
         queue_result = xQueueReceive(s_send_queue, &received_message, pdMS_TO_TICKS(1000));
         
@@ -136,13 +147,13 @@ BaseType_t CommuSend_Init(void)
 }
 
 /**
- * @brief 发送ESP AT命令
+ * @brief 发送4G AT命令
  * @param command AT命令字符串
  * @param expected_response 期望的响应
  * @param timeout_ms 超时时间
  * @return BaseType_t 发送结果
  */
-BaseType_t CommuSend_EspAtCommand(const char* command, const char* expected_response, uint32_t timeout_ms)
+BaseType_t CommuSend_4gAtCommand(const char* command, const char* expected_response, uint32_t timeout_ms)
 {
     SendMessage_t message;
     
@@ -151,8 +162,8 @@ BaseType_t CommuSend_EspAtCommand(const char* command, const char* expected_resp
     }
     
     /* 构建发送消息 */
-    message.type = SEND_TYPE_ESP_AT;
-    message.target_uart = UART_ID_LTE;  // ESP模块通常连接到LTE串口
+    message.type = SEND_TYPE_4G_AT;
+    message.target_uart = UART_ID_LTE;  // 4G模块连接到LTE串口
     message.length = strlen(command);
     memcpy(message.data, command, message.length);
     message.timeout_ms = timeout_ms;
@@ -165,7 +176,7 @@ BaseType_t CommuSend_EspAtCommand(const char* command, const char* expected_resp
     
     /* 发送到队列 */
     if (xQueueSend(s_send_queue, &message, pdMS_TO_TICKS(100)) != pdTRUE) {
-        LOG_ERROR(LOG_MODULE_PROTOCOL, "Failed to queue ESP AT command");
+        LOG_ERROR(LOG_MODULE_PROTOCOL, "Failed to queue 4G AT command");
         return pdFAIL;
     }
     
@@ -222,11 +233,11 @@ static void process_send_message(const SendMessage_t* message)
     }
     
     switch (message->type) {
-        case SEND_TYPE_ESP_AT:
-            send_result = send_esp_at_command((const char*)message->data, 
+        case SEND_TYPE_4G_AT:
+            send_result = send_4g_at_command((const char*)message->data, 
                                             message->wait_response ? message->expected_response : NULL,
                                             message->timeout_ms);
-            LOG_INFO(LOG_MODULE_PROTOCOL, "ESP AT command: %s, Result: %s", 
+            LOG_INFO(LOG_MODULE_PROTOCOL, "4G AT command: %s, Result: %s", 
                     message->data, send_result ? "SUCCESS" : "FAILED");
             break;
             
@@ -251,13 +262,13 @@ static void process_send_message(const SendMessage_t* message)
 }
 
 /**
- * @brief 发送ESP AT命令
+ * @brief 发送4G AT命令
  * @param command AT命令
  * @param expected_response 期望响应
  * @param timeout_ms 超时时间
  * @return bool 发送结果
  */
-static bool send_esp_at_command(const char* command, const char* expected_response, uint32_t timeout_ms)
+static bool send_4g_at_command(const char* command, const char* expected_response, uint32_t timeout_ms)
 {
     UART_Status_t uart_result;
     char at_command[256];
@@ -270,7 +281,7 @@ static bool send_esp_at_command(const char* command, const char* expected_respon
     uart_result = UART_RingBuffer_Send(UART_ID_LTE, (const uint8_t*)at_command, strlen(at_command), timeout_ms);
     
     if (uart_result == UART_OK) {
-        LOG_DEBUG(LOG_MODULE_PROTOCOL, "AT command sent: %s", command);
+        LOG_DEBUG(LOG_MODULE_PROTOCOL, "4G AT command sent: %s", command);
         
         /* 如果需要等待响应 */
         if (expected_response) {
@@ -279,7 +290,7 @@ static bool send_esp_at_command(const char* command, const char* expected_respon
             result = true;
         }
     } else {
-        LOG_ERROR(LOG_MODULE_PROTOCOL, "Failed to send AT command: %s", command);
+        LOG_ERROR(LOG_MODULE_PROTOCOL, "Failed to send 4G AT command: %s", command);
     }
     
     return result;
@@ -358,77 +369,69 @@ static void send_heartbeat_data(void)
 {
     static uint32_t heartbeat_counter = 0;
     
-    /* 每10次心跳发送一次ESP状态查询 */
+    /* 每10次心跳发送一次4G状态查询 */
     if ((heartbeat_counter % 10) == 0) {
-        CommuSend_EspAtCommand("AT", "OK", 2000);
+        /* 检查4G模块状态 */
+        QuectelState_t state = Quectel4G_GetState();
+        if (state >= QUECTEL_STATE_READY) {
+            CommuSend_4gAtCommand("AT", "OK", 2000);
+        }
     }
     
     heartbeat_counter++;
 }
 
 /**
- * @brief ESP模块初始化序列
+ * @brief 获取4G模块状态
+ * @return ModemState_t 4G模块当前状态
  */
-static void esp_init_sequence(void)
+ModemState_t CommuSend_GetModemState(void)
 {
-    LOG_INFO(LOG_MODULE_PROTOCOL, "Starting ESP initialization sequence");
-    
-    /* 延时等待ESP模块启动 */
-    vTaskDelay(pdMS_TO_TICKS(2000));
-    
-    /* 基本AT命令测试 */
-    if (send_esp_at_command("AT", "OK", 3000)) {
-        LOG_INFO(LOG_MODULE_PROTOCOL, "ESP module responded to AT command");
-        s_esp_state = ESP_STATE_IDLE;
-        
-        /* 获取版本信息 */
-        send_esp_at_command("AT+GMR", "OK", 3000);
-        
-        /* 设置为Station模式 */
-        send_esp_at_command("AT+CWMODE=1", "OK", 3000);
-        
-    } else {
-        LOG_ERROR(LOG_MODULE_PROTOCOL, "ESP module not responding");
-        s_esp_state = ESP_STATE_ERROR;
-    }
+    return s_modem_state;
 }
 
 /**
- * @brief 获取ESP状态
- * @return EspState_t ESP当前状态
+ * @brief 发送HTTP请求
+ * @param url 请求URL
+ * @param data 请求数据
+ * @return BaseType_t 发送结果
  */
-EspState_t CommuSend_GetEspState(void)
+BaseType_t CommuSend_HttpRequest(const char* url, const char* data)
 {
-    return s_esp_state;
-}
-
-/**
- * @brief 连接WiFi网络
- * @param ssid WiFi名称
- * @param password WiFi密码
- * @return BaseType_t 连接结果
- */
-BaseType_t CommuSend_ConnectWiFi(const char* ssid, const char* password)
-{
-    char command[128];
+    char command[256];
     
-    if (!ssid || !password) {
+    if (!url) {
         return pdFAIL;
     }
     
-    s_esp_state = ESP_STATE_CONNECTING;
+    s_modem_state = MODEM_STATE_SENDING;
     
-    /* 格式化连接命令 */
-    snprintf(command, sizeof(command), "AT+CWJAP=\"%s\",\"%s\"", ssid, password);
+    /* 配置HTTP URL */
+    snprintf(command, sizeof(command), "AT+QHTTPURL=%d,80", (int)strlen(url));
+    if (CommuSend_4gAtCommand(command, "CONNECT", 5000) != pdPASS) {
+        s_modem_state = MODEM_STATE_ERROR;
+        return pdFAIL;
+    }
     
-    /* 发送连接命令 */
-    if (CommuSend_EspAtCommand(command, "WIFI CONNECTED", 10000) == pdPASS) {
-        s_esp_state = ESP_STATE_CONNECTED;
-        LOG_INFO(LOG_MODULE_PROTOCOL, "WiFi connected successfully");
-        return pdPASS;
+    /* 发送URL */
+    if (CommuSend_4gAtCommand(url, "OK", 5000) != pdPASS) {
+        s_modem_state = MODEM_STATE_ERROR;
+        return pdFAIL;
+    }
+    
+    /* 发送HTTP GET请求 */
+    if (data && strlen(data) > 0) {
+        /* POST请求 */
+        snprintf(command, sizeof(command), "AT+QHTTPPOST=%d,80,80", (int)strlen(data));
+        if (CommuSend_4gAtCommand(command, "CONNECT", 5000) == pdPASS) {
+            CommuSend_4gAtCommand(data, "OK", 10000);
+        }
     } else {
-        s_esp_state = ESP_STATE_ERROR;
-        LOG_ERROR(LOG_MODULE_PROTOCOL, "WiFi connection failed");
-        return pdFAIL;
+        /* GET请求 */
+        CommuSend_4gAtCommand("AT+QHTTPGET=80", "OK", 10000);
     }
+    
+    s_modem_state = MODEM_STATE_CONNECTED;
+    LOG_INFO(LOG_MODULE_PROTOCOL, "HTTP request sent successfully");
+    return pdPASS;
 }

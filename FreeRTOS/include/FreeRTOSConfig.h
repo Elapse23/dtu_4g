@@ -75,12 +75,13 @@
 //针对不同的编译器调用不同的stdint.h文件
 #if defined(__ICCARM__) || defined(__CC_ARM) || defined(__GNUC__)
     #include <stdint.h>
+    #include <stdio.h>  /* 包含stdio.h以声明printf函数，避免configASSERT警告 */
     extern uint32_t SystemCoreClock;
 #endif
 
 //断言
-//#define vAssertCalled(char,int) printf("Error:%s,%d\r\n",char,int)
-//#define configASSERT(x) if((x)==0) vAssertCalled(__FILE__,__LINE__)
+#define vAssertCalled(char,int) printf("Error:%s,%d\r\n",char,int)
+#define configASSERT(x) if((x)==0) vAssertCalled(__FILE__,__LINE__)
 
 /***************************************************************************************************************/
 /*                                        FreeRTOS基础配置配置选项                                              */
@@ -95,7 +96,7 @@
 #define configCPU_CLOCK_HZ						(SystemCoreClock)       //CPU频率
 #define configTICK_RATE_HZ						(1000)                  //时钟节拍频率，这里设置为1000，周期就是1ms
 #define configMAX_PRIORITIES					(32)                    //可使用的最大优先级
-#define configMINIMAL_STACK_SIZE				((unsigned short)130)   //空闲任务使用的堆栈大小
+#define configMINIMAL_STACK_SIZE				((unsigned short)200)   //空闲任务使用的堆栈大小
 #define configMAX_TASK_NAME_LEN					(16)                    //任务名字字符串长度
 
 #define configUSE_16_BIT_TICKS					0                       //系统节拍计数器变量数据类型，
@@ -105,11 +106,11 @@
 #define configUSE_MUTEXES						1                       //为1时使用互斥信号量
 #define configQUEUE_REGISTRY_SIZE				8                       //不为0时表示启用队列记录，具体的值是可以
                                                                         //记录的队列和信号量最大数目。
-#define configCHECK_FOR_STACK_OVERFLOW			0                       //大于0时启用堆栈溢出检测功能，如果使用此功能
+#define configCHECK_FOR_STACK_OVERFLOW			2                       //大于0时启用堆栈溢出检测功能，如果使用此功能
                                                                         //用户必须提供一个栈溢出钩子函数，如果使用的话
                                                                         //此值可以为1或者2，因为有两种栈溢出检测方法。
 #define configUSE_RECURSIVE_MUTEXES				1                       //为1时使用递归互斥信号量
-#define configUSE_MALLOC_FAILED_HOOK			0                       //1使用内存申请失败钩子函数
+#define configUSE_MALLOC_FAILED_HOOK			1                       //1使用内存申请失败钩子函数
 #define configUSE_APPLICATION_TASK_TAG			0                       
 #define configUSE_COUNTING_SEMAPHORES			1                       //为1时使用计数信号量
 
@@ -117,7 +118,7 @@
 /*                                FreeRTOS与内存申请有关配置选项                                                */
 /***************************************************************************************************************/
 #define configSUPPORT_DYNAMIC_ALLOCATION        1                       //支持动态内存申请
-#define configTOTAL_HEAP_SIZE					((size_t)(50*1024))     //系统所有总的堆大小
+#define configTOTAL_HEAP_SIZE					((size_t)(80*1024))     //系统所有总的堆大小
 
 /***************************************************************************************************************/
 /*                                FreeRTOS与钩子函数有关的配置选项                                              */
@@ -181,6 +182,6 @@
 /***************************************************************************************************************/
 #define xPortPendSVHandler 		PendSV_Handler
 #define vPortSVCHandler 		SVC_Handler
-//#define xPortSysTickHandler		SysTick_Handler
+#define xPortSysTickHandler		SysTick_Handler
 #endif /* FREERTOS_CONFIG_H */
 

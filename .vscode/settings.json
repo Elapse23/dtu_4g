@@ -1,7 +1,14 @@
 {
   "files.associations": {
     "*.h": "c",
-    "gd32f4xx*": "c"
+    "gd32f4xx*": "c",
+    "BootloaderHead.H": "cpp",
+    "IcpHead.H": "cpp",
+    "BootLoaderAPP.H": "cpp",
+    "BootUARTCode.C": "cpp",
+    "BootUARTCode.H": "cpp",
+    "BootFlashCode.H": "cpp",
+    "BootSpiFlashCode.H": "cpp"
   },
   "C_Cpp.errorSquiggles": "disabled"
 }

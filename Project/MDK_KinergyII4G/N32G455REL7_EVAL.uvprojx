@@ -339,9 +339,9 @@
             <v6Rtti>0</v6Rtti>
             <VariousControls>
               <MiscControls>--diag_suppress=68  --diag_suppress=111  --diag_suppress=550</MiscControls>
-              <Define>USE_STDPERIPH_DRIVER,GD32F450,LV_CONF_INCLUDE_SIMPLE,USE_EMBEDDED_PHY,USE_USB_HS</Define>
+              <Define>USE_STDPERIPH_DRIVER,KINERGY_II_4G,N32G45X,USE_STDPERIPH_DRIVER,LV_CONF_INCLUDE_SIMPLE,USE_EMBEDDED_PHY,USE_USB_HS</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\FreeRTOS;..\..\FreeRTOS\include;..\..\FreeRTOS\portable\RVDS\ARM_CM4F;.\Source\develop\01_develop_tsk;.\Source\sdk\01_tsk;.\Source\sdk\02_software_api;.\Source\sdk\04_bsp;..\..\Firmware\CMSIS\device;..\..\Firmware\CMSIS\core;..\..\Firmware\n32g45x_std_periph_driver\inc</IncludePath>
+              <IncludePath>..\..\FreeRTOS;..\..\FreeRTOS\include;..\..\FreeRTOS\portable\RVDS\ARM_CM4F;.\Source\develop\01_develop_tsk;.\Source\sdk\01_tsk;.\Source\sdk\02_software_api;.\Source\sdk\04_bsp;..\..\Firmware\CMSIS\device;..\..\Firmware\CMSIS\core;..\..\Firmware\n32g45x_std_periph_driver\inc;.\Source\sdk\00_Bootloader</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -383,12 +383,62 @@
       </TargetOption>
       <Groups>
         <Group>
+          <GroupName>00_Bootloader</GroupName>
+          <Files>
+            <File>
+              <FileName>BootFlashCode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\sdk\00_Bootloader\BootFlashCode.c</FilePath>
+            </File>
+            <File>
+              <FileName>BootIICCode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\sdk\00_Bootloader\BootIICCode.c</FilePath>
+            </File>
+            <File>
+              <FileName>BootLoader.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\sdk\00_Bootloader\BootLoader.c</FilePath>
+            </File>
+            <File>
+              <FileName>BootloaderAPP.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\sdk\00_Bootloader\BootloaderAPP.c</FilePath>
+            </File>
+            <File>
+              <FileName>BootSpiFlashCode.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\sdk\00_Bootloader\BootSpiFlashCode.c</FilePath>
+            </File>
+            <File>
+              <FileName>BootUARTCode.C</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\sdk\00_Bootloader\BootUARTCode.C</FilePath>
+            </File>
+            <File>
+              <FileName>BootloaderAsmFuncs_Keil.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>.\Source\sdk\00_Bootloader\BootloaderAsmFuncs_Keil.s</FilePath>
+            </File>
+            <File>
+              <FileName>InterruptJmpTable_Keil.s</FileName>
+              <FileType>2</FileType>
+              <FilePath>.\Source\sdk\00_Bootloader\InterruptJmpTable_Keil.s</FilePath>
+            </File>
+          </Files>
+        </Group>
+        <Group>
           <GroupName>01_develop_tsk</GroupName>
           <Files>
             <File>
               <FileName>main.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\develop\01_develop_tsk\main.c</FilePath>
+            </File>
+            <File>
+              <FileName>n32g45x_it.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\develop\01_develop_tsk\n32g45x_it.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -404,6 +454,11 @@
               <FileName>tsk_commu_send.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\sdk\01_tsk\tsk_commu_send.c</FilePath>
+            </File>
+            <File>
+              <FileName>tsk_4g_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\sdk\01_tsk\tsk_4g_init.c</FilePath>
             </File>
           </Files>
         </Group>
@@ -439,11 +494,6 @@
               <FileName>bsp_spiflash.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\sdk\04_bsp\bsp_spiflash.c</FilePath>
-            </File>
-            <File>
-              <FileName>bsp_uart_irq_handlers.c</FileName>
-              <FileType>1</FileType>
-              <FilePath>.\Source\sdk\04_bsp\bsp_uart_irq_handlers.c</FilePath>
             </File>
             <File>
               <FileName>bsp_uart_ring_buffer.c</FileName>

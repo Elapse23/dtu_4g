@@ -52,34 +52,13 @@ static const LogConfig_t default_config = {
     .max_line_length = LOG_MAX_LINE_LENGTH
 };
 
-// 默认模块名
-static const char* default_module_names[LOG_MODULE_COUNT] = {
-    [LOG_MODULE_SYSTEM] = "SYS",
-    [LOG_MODULE_UART] = "UART",
-    [LOG_MODULE_NETWORK] = "NET",
-    [LOG_MODULE_SENSOR] = "SENSOR",
-    [LOG_MODULE_STORAGE] = "STORAGE",
-    [LOG_MODULE_PROTOCOL] = "PROTO",
-    [LOG_MODULE_APP] = "APP",
-    [LOG_MODULE_TEST] = "TEST",
-};
-
-// 日志级别字符串
-static const char* level_strings[] = {
-    [LOG_LEVEL_DEBUG] = "DEBUG",
-    [LOG_LEVEL_INFO] = "INFO",
-    [LOG_LEVEL_WARN] = "WARN",
-    [LOG_LEVEL_ERROR] = "ERROR",
-    [LOG_LEVEL_FATAL] = "FATAL"
-};
-
 // 日志级别颜色
 static const char* level_colors[] = {
-    [LOG_LEVEL_DEBUG] = LOG_COLOR_CYAN,
-    [LOG_LEVEL_INFO] = LOG_COLOR_GREEN,
-    [LOG_LEVEL_WARN] = LOG_COLOR_YELLOW,
-    [LOG_LEVEL_ERROR] = LOG_COLOR_RED,
-    [LOG_LEVEL_FATAL] = LOG_COLOR_MAGENTA
+    LOG_COLOR_CYAN,     // LOG_LEVEL_DEBUG = 0
+    LOG_COLOR_GREEN,    // LOG_LEVEL_INFO = 1  
+    LOG_COLOR_YELLOW,   // LOG_LEVEL_WARN = 2
+    LOG_COLOR_RED,      // LOG_LEVEL_ERROR = 3
+    LOG_COLOR_MAGENTA   // LOG_LEVEL_FATAL = 4
 };
 
 /**
@@ -90,12 +69,26 @@ static const char* level_colors[] = {
  * @return 时间戳字符串长度
  */
 static int format_timestamp(char* buffer, size_t size, LogTimestampType_t type) {
+    static uint32_t boot_sequence = 0;  // 启动序列计数器
+    uint32_t timestamp_value;
+    
+    // 如果调度器已启动，使用系统tick；否则使用启动序列
+    if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+        timestamp_value = xTaskGetTickCount();
+    } else {
+        timestamp_value = boot_sequence++;
+    }
+    
     switch (type) {
         case LOG_TIMESTAMP_TICK:
-            return snprintf(buffer, size, "[%010lu]", xTaskGetTickCount());
+            return snprintf(buffer, size, "[%010lu]", timestamp_value);
             
         case LOG_TIMESTAMP_MS:
-            return snprintf(buffer, size, "[%lu ms]", xTaskGetTickCount() * portTICK_PERIOD_MS);
+            if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
+                return snprintf(buffer, size, "[%lu ms]", timestamp_value * portTICK_PERIOD_MS);
+            } else {
+                return snprintf(buffer, size, "[BOOT-%lu]", timestamp_value);
+            }
             
         case LOG_TIMESTAMP_RTC:
             // TODO: 实现RTC时间格式化
@@ -179,11 +172,15 @@ bool LogManager_Init(const LogConfig_t* config) {
         memcpy(&g_log_manager.config, &default_config, sizeof(LogConfig_t));
     }
     
-    // 初始化模块名
-    for (int i = 0; i < LOG_MODULE_COUNT; i++) {
-        strncpy(g_log_manager.module_names[i], default_module_names[i], LOG_MODULE_NAME_MAX_LEN);
-        g_log_manager.module_names[i][LOG_MODULE_NAME_MAX_LEN] = '\0';
-    }
+    // 初始化模块名 - 使用直接赋值方式避免指针问题
+    strcpy(g_log_manager.module_names[0], "SYS");
+    strcpy(g_log_manager.module_names[1], "UART");
+    strcpy(g_log_manager.module_names[2], "NET");
+    strcpy(g_log_manager.module_names[3], "SENSOR");
+    strcpy(g_log_manager.module_names[4], "STORAGE");
+    strcpy(g_log_manager.module_names[5], "PROTO");
+    strcpy(g_log_manager.module_names[6], "APP");
+    strcpy(g_log_manager.module_names[7], "TEST");
     
     // 创建互斥锁
     g_log_manager.mutex = xSemaphoreCreateMutex();
@@ -313,7 +310,7 @@ void LogManager_OutputV(LogLevel_t level, LogModule_t module, const char* file, 
     
     // 添加级别和模块信息
     if (remaining > 0) {
-        const char* level_str = (level < LOG_LEVEL_OFF) ? level_strings[level] : "UNKNOWN";
+        const char* level_str = LogManager_GetLevelString(level);
         const char* module_str = (module < LOG_MODULE_COUNT) ? g_log_manager.module_names[module] : "UNKNOWN";
         
         int len = snprintf(buffer + pos, remaining, " [%s][%s] ", level_str, module_str);
@@ -599,10 +596,14 @@ void LogManager_HexDump(LogLevel_t level, LogModule_t module, const uint8_t* dat
  * @return 级别字符串
  */
 const char* LogManager_GetLevelString(LogLevel_t level) {
-    if (level < LOG_LEVEL_OFF) {
-        return level_strings[level];
+    switch (level) {
+        case LOG_LEVEL_DEBUG: return "DEBUG";
+        case LOG_LEVEL_INFO:  return "INFO";
+        case LOG_LEVEL_WARN:  return "WARN";
+        case LOG_LEVEL_ERROR: return "ERROR";
+        case LOG_LEVEL_FATAL: return "FATAL";
+        default: return "UNKNOWN";
     }
-    return "UNKNOWN";
 }
 
 /**
