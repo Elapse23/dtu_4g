@@ -132,7 +132,12 @@ static int format_file_line(char* buffer, size_t size, const char* file, int lin
  * @param message 格式化后的日志消息
  */
 static void output_to_uart(const char* message) {
-    UART_RingBuffer_SendString(UART_ID_LOG, message, LOG_OUTPUT_TIMEOUT_MS);
+    // 使用较长的超时时间确保完整发送
+    UART_Status_t status = UART_RingBuffer_SendString(UART_ID_LOG, message, 1000);
+    if (status != UART_OK) {
+        // 如果发送失败，尝试再次发送
+        status = UART_RingBuffer_SendString(UART_ID_LOG, message, 2000);
+    }
 }
 
 /**
@@ -143,7 +148,8 @@ static bool lock_log_manager(void) {
     if (!g_log_manager.mutex) {
         return false;
     }
-    return (xSemaphoreTake(g_log_manager.mutex, pdMS_TO_TICKS(100)) == pdTRUE);
+    // 增加互斥锁等待时间，确保能获取到锁
+    return (xSemaphoreTake(g_log_manager.mutex, pdMS_TO_TICKS(500)) == pdTRUE);
 }
 
 /**

@@ -424,13 +424,25 @@ typedef struct {
 } Quectel4G_TcpServerConfig_t;
 
 /**
+ * @brief TCP连接事件类型枚举
+ * @note 定义TCP连接过程中可能出现的各种事件类型
+ */
+typedef enum {
+    TCP_EVENT_CONNECTED = 0,         /**< 首次连接成功 */
+    TCP_EVENT_CONNECT_FAILED,        /**< 连接失败 */
+    TCP_EVENT_DISCONNECTED,          /**< 连接断开 */
+    TCP_EVENT_RECONNECTED,           /**< 重连成功 */
+    TCP_EVENT_RECONNECT_FAILED       /**< 重连失败 */
+} TcpEventType_t;
+
+/**
  * @brief TCP连接事件回调函数类型
- * @param event_type 事件类型：0=连接成功，1=连接失败，2=断开连接，3=重连成功，4=重连失败
+ * @param event_type 事件类型（使用TcpEventType_t枚举值）
  * @param socket_id Socket ID
  * @param error_code 错误代码（失败时有效）
  * @param user_data 用户数据指针
  */
-typedef void (*Quectel4G_TcpEventCallback_t)(uint8_t event_type, uint8_t socket_id, 
+typedef void (*Quectel4G_TcpEventCallback_t)(TcpEventType_t event_type, uint8_t socket_id, 
                                             uint8_t error_code, void* user_data);
 
 /* ==================== 设备注册和数据交互协议 ==================== */

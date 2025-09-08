@@ -26,6 +26,8 @@ extern "C" {
 // 前向声明，避免循环包含
 // #include "bsp_log_manager.h" // 如需要日志功能，在.c文件中包含
 
+
+
 // 缓冲区大小定义
 #define UART_RX_BUFFER_SIZE         1024    // 接收缓冲区大小
 #define UART_TX_BUFFER_SIZE         512     // 发送缓冲区大小
@@ -187,6 +189,12 @@ void UART_RingBuffer_IRQHandler(UART_ID_t uart_id);
 #define UART_Printf_RS485(fmt, ...)     UART_RingBuffer_Printf(UART_ID_RS485, UART_TIMEOUT_DEFAULT, fmt, ##__VA_ARGS__)
 #define UART_Printf_LTE(fmt, ...)       UART_RingBuffer_Printf(UART_ID_LTE, UART_TIMEOUT_DEFAULT, fmt, ##__VA_ARGS__)
 #define UART_Printf_LOG(fmt, ...)       UART_RingBuffer_Printf(UART_ID_LOG, UART_TIMEOUT_DEFAULT, fmt, ##__VA_ARGS__)
+
+// 串口转发控制函数
+void UART_RingBuffer_SetLogToLteForward(bool enable);
+void UART_RingBuffer_SetLteToLogForward(bool enable);
+bool UART_RingBuffer_IsLogToLteForwardEnabled(void);
+bool UART_RingBuffer_IsLteToLogForwardEnabled(void);
 
 #ifdef __cplusplus
 }

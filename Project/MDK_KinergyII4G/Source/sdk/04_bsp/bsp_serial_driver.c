@@ -17,7 +17,45 @@
 
 Serial_Status_t Serial_Driver_Init(USART_Module* com, uint32_t baudrate) {
 
-	if(RS485_UART == com)
+	if(LOG_UART == com)
+	{
+        // 初始化LOG串口时钟和GPIO时钟
+        RCC_EnableAPB2PeriphClk(LOG_GPIO_CLK | RCC_APB2_PERIPH_AFIO, ENABLE);
+        LOG_CLK_CMD(LOG_UART_CLK, ENABLE);
+        USART_DeInit(LOG_UART);
+        {
+            GPIO_InitType GPIO_InitStructure;
+            GPIO_InitStructure.Pin = LOG_RX_PIN;
+            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
+            GPIO_InitPeripheral(LOG_GPIO, &GPIO_InitStructure);
+            GPIO_InitStructure.Pin = LOG_TX_PIN;
+            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
+            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_AF_PP;
+            GPIO_InitPeripheral(LOG_GPIO, &GPIO_InitStructure);
+        }
+        {
+            NVIC_InitType NVIC_InitStructure;
+            NVIC_InitStructure.NVIC_IRQChannel = LOG_IRQn;
+            NVIC_InitStructure.NVIC_IRQChannelPreemptionPriority = 6; // 比RS485优先级低
+            NVIC_InitStructure.NVIC_IRQChannelSubPriority = 0;
+            NVIC_InitStructure.NVIC_IRQChannelCmd = ENABLE;
+            NVIC_Init(&NVIC_InitStructure);
+        }
+        {
+            USART_InitType USART_InitStructure;
+            USART_InitStructure.BaudRate = baudrate;
+            USART_InitStructure.WordLength = USART_WL_8B;
+            USART_InitStructure.StopBits = USART_STPB_1;
+            USART_InitStructure.Parity = USART_PE_NO;
+            USART_InitStructure.HardwareFlowControl = USART_HFCTRL_NONE;
+            USART_InitStructure.Mode = USART_MODE_RX | USART_MODE_TX;
+            USART_Init(LOG_UART, &USART_InitStructure);
+            USART_ConfigInt(LOG_UART, USART_INT_RXDNE, ENABLE);
+            USART_Enable(LOG_UART, ENABLE);
+        }
+    }
+	else if(RS485_UART == com)
 	{
         RCC_EnableAPB2PeriphClk(RS485_TX_GPIO_CLK | RS485_RX_GPIO_CLK | RS485_DIR_GPIO_CLK | RCC_APB2_PERIPH_AFIO, ENABLE);
         RS485_CLK_CMD(RS485_UART_CLK, ENABLE);
@@ -95,34 +133,6 @@ Serial_Status_t Serial_Driver_Init(USART_Module* com, uint32_t baudrate) {
             USART_ConfigInt(LTE_UART, USART_INT_RXDNE, ENABLE);
             USART_ConfigInt(LTE_UART, USART_INT_IDLEF, ENABLE);
             USART_Enable(LTE_UART, ENABLE);
-        }
-    }
-    else if(LOG_UART == com)
-    {
-        RCC_EnableAPB2PeriphClk(LOG_GPIO_CLK | RCC_APB2_PERIPH_AFIO, ENABLE);
-        LOG_CLK_CMD(LOG_UART_CLK, ENABLE);
-        USART_DeInit(LOG_UART);
-        {
-            GPIO_InitType GPIO_InitStructure;
-            GPIO_InitStructure.Pin       = LOG_RX_PIN;
-            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-            GPIO_InitStructure.GPIO_Mode = GPIO_Mode_IPU;
-            GPIO_InitPeripheral(LOG_GPIO, &GPIO_InitStructure);
-            GPIO_InitStructure.Pin        = LOG_TX_PIN;
-            GPIO_InitStructure.GPIO_Speed = GPIO_Speed_50MHz;
-            GPIO_InitStructure.GPIO_Mode  = GPIO_Mode_AF_PP;
-            GPIO_InitPeripheral(LOG_GPIO, &GPIO_InitStructure);
-        }
-        {
-            USART_InitType USART_InitStructure;
-            USART_InitStructure.BaudRate            = baudrate;
-            USART_InitStructure.WordLength          = USART_WL_8B;
-            USART_InitStructure.StopBits            = USART_STPB_1;
-            USART_InitStructure.Parity              = USART_PE_NO;
-            USART_InitStructure.HardwareFlowControl = USART_HFCTRL_NONE;
-            USART_InitStructure.Mode                = USART_MODE_TX;
-            USART_Init(LOG_UART, &USART_InitStructure);
-            USART_Enable(LOG_UART, ENABLE);
         }
     }
     else

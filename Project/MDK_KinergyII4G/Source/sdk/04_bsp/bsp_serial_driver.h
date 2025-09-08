@@ -84,6 +84,8 @@
 #define LOG_RX_PIN                                  GPIO_PIN_11
 #define LOG_TX_PIN                                  GPIO_PIN_10
 #define LOG_CLK_CMD                                 RCC_EnableAPB1PeriphClk
+#define LOG_IRQn                                    UART4_IRQn
+#define LOG_IRQHandler                              UART4_IRQHandler
 
 /* 兼容旧宏名（LOG） */
 #define usart_peripheral_log                        LOG_UART
@@ -93,6 +95,8 @@
 #define usart_peripheral_log_RxPin                  LOG_RX_PIN
 #define usart_peripheral_log_TxPin                  LOG_TX_PIN
 #define usart_peripheral_log_APBxClkCmd             LOG_CLK_CMD
+#define usart_peripheral_log_IRQn                   LOG_IRQn
+#define usart_peripheral_log_IRQHandler             LOG_IRQHandler
 
 // 串口接收缓冲区默认大小
 #define SERIAL_RX_BUFFER_DEFAULT_SIZE 1024  // 从512增加到1024，提供更大缓冲空间

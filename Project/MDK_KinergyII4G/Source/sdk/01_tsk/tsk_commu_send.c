@@ -16,12 +16,12 @@
 #include "bsp_uart_ring_buffer.h"
 #include "bsp_log_manager.h"
 #include "tsk_4g_init.h"
-#include "bsp_watchdog.h"
+
 #include <string.h>
 #include <stdio.h>
 
 /* 任务参数 */
-#define SEND_TASK_STACK_SIZE        (configMINIMAL_STACK_SIZE * 2)
+#define SEND_TASK_STACK_SIZE        (configMINIMAL_STACK_SIZE * 4)  // 增加栈大小
 #define SEND_TASK_PRIORITY          (tskIDLE_PRIORITY + 3)
 #define SEND_QUEUE_LENGTH           20
 #define SEND_TIMEOUT_MS             1000
@@ -80,6 +80,9 @@ void vCommuSendTask(void* pvParameters)
     
     LOG_INFO(LOG_MODULE_PROTOCOL, "Communication send task started");
     
+    /* 初始化消息接收缓冲区 */
+    memset(&received_message, 0, sizeof(received_message));
+    
     /* 等待4G模块初始化完成 */
     LOG_INFO(LOG_MODULE_PROTOCOL, "Waiting for 4G module initialization...");
     if (Quectel4G_WaitForReady(60000)) {  // 等待最多60秒
@@ -92,8 +95,9 @@ void vCommuSendTask(void* pvParameters)
     
     /* 任务主循环 */
     while (1) {
-        /* 喂狗 - 防止看门狗复位 */
-        MACRO_IWDG_RELOAD();
+        
+        /* 清空消息缓冲区，防止垃圾数据 */
+        memset(&received_message, 0, sizeof(received_message));
         
         /* 等待发送队列中的消息 */
         queue_result = xQueueReceive(s_send_queue, &received_message, pdMS_TO_TICKS(1000));
@@ -148,29 +152,31 @@ BaseType_t CommuSend_Init(void)
 
 /**
  * @brief 发送4G AT命令
- * @param command AT命令字符串
- * @param expected_response 期望的响应
- * @param timeout_ms 超时时间
+ * @param cmd_config AT命令配置结构体
  * @return BaseType_t 发送结果
  */
-BaseType_t CommuSend_4gAtCommand(const char* command, const char* expected_response, uint32_t timeout_ms)
+BaseType_t CommuSend_4gAtCommand(const AT_Cmd_Config_t* cmd_config)
 {
     SendMessage_t message;
     
-    if (!command || strlen(command) >= sizeof(message.data)) {
+    if (!cmd_config || !cmd_config->at_cmd || strlen(cmd_config->at_cmd) >= sizeof(message.data)) {
         return pdFAIL;
     }
+    
+    /* 初始化消息结构体，清除垃圾数据 */
+    memset(&message, 0, sizeof(message));
     
     /* 构建发送消息 */
     message.type = SEND_TYPE_4G_AT;
     message.target_uart = UART_ID_LTE;  // 4G模块连接到LTE串口
-    message.length = strlen(command);
-    memcpy(message.data, command, message.length);
-    message.timeout_ms = timeout_ms;
-    message.wait_response = (expected_response != NULL);
+    message.length = strlen(cmd_config->at_cmd);
+    memcpy(message.data, cmd_config->at_cmd, message.length);
+    message.data[message.length] = '\0';  // 确保字符串结束
+    message.timeout_ms = cmd_config->timeout_ms;
+    message.wait_response = (cmd_config->expected_resp != NULL);
     
-    if (expected_response) {
-        strncpy(message.expected_response, expected_response, sizeof(message.expected_response) - 1);
+    if (cmd_config->expected_resp) {
+        strncpy(message.expected_response, cmd_config->expected_resp, sizeof(message.expected_response) - 1);
         message.expected_response[sizeof(message.expected_response) - 1] = '\0';
     }
     
@@ -197,6 +203,9 @@ BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length)
         return pdFAIL;
     }
     
+    /* 初始化消息结构体，清除垃圾数据 */
+    memset(&message, 0, sizeof(message));
+    
     /* 构建发送消息 */
     message.type = SEND_TYPE_RS485_DATA;
     message.target_uart = UART_ID_RS485;
@@ -212,6 +221,45 @@ BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length)
     }
     
     return pdPASS;
+}
+
+/**
+ * @brief 统一的UART数据发送接口
+ * @param uart_id 串口ID
+ * @param data 要发送的数据
+ * @param length 数据长度
+ * @param timeout_ms 超时时间（毫秒）
+ * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
+ */
+BaseType_t CommuSend_UartData(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms)
+{
+    UART_Status_t uart_result;
+    
+    if (uart_id == UART_ID_LTE) {
+        // LTE串口直接发送，绕过LOG到LTE的转发机制
+        // 临时禁用LOG到LTE转发，避免冲突
+        bool log_forward_was_enabled = UART_RingBuffer_IsLogToLteForwardEnabled();
+        if (log_forward_was_enabled) {
+            UART_RingBuffer_SetLogToLteForward(false);
+        }
+        
+        // 直接发送到LTE串口
+        uart_result = UART_RingBuffer_Send(uart_id, data, length, timeout_ms);
+        
+        // 恢复LOG到LTE转发状态
+        if (log_forward_was_enabled) {
+            UART_RingBuffer_SetLogToLteForward(true);
+        }
+        
+        LOG_DEBUG(LOG_MODULE_PROTOCOL, "LTE direct send result: %s, data: %.*s", 
+                 uart_result == UART_OK ? "SUCCESS" : "FAILED", 
+                 (int)length, (const char*)data);
+    } else {
+        // 其他串口正常发送，包括LOG→LTE转发功能
+        uart_result = UART_RingBuffer_Send(uart_id, data, length, timeout_ms);
+    }
+    
+    return (uart_result == UART_OK) ? pdPASS : pdFAIL;
 }
 
 /**
@@ -278,7 +326,7 @@ static bool send_4g_at_command(const char* command, const char* expected_respons
     snprintf(at_command, sizeof(at_command), "%s\r\n", command);
     
     /* 发送AT命令 */
-    uart_result = UART_RingBuffer_Send(UART_ID_LTE, (const uint8_t*)at_command, strlen(at_command), timeout_ms);
+    uart_result = CommuSend_UartData(UART_ID_LTE, (const uint8_t*)at_command, strlen(at_command), timeout_ms) == pdPASS ? UART_OK : UART_ERR_TIMEOUT;
     
     if (uart_result == UART_OK) {
         LOG_DEBUG(LOG_MODULE_PROTOCOL, "4G AT command sent: %s", command);
@@ -304,12 +352,10 @@ static bool send_4g_at_command(const char* command, const char* expected_respons
  */
 static bool send_rs485_data(const uint8_t* data, uint16_t length)
 {
-    UART_Status_t result;
-    
     /* 发送数据 */
-    result = UART_RingBuffer_Send(UART_ID_RS485, data, length, SEND_TIMEOUT_MS);
+    BaseType_t send_result = CommuSend_UartData(UART_ID_RS485, data, length, SEND_TIMEOUT_MS);
     
-    if (result == UART_OK) {
+    if (send_result == pdPASS) {
         LOG_DEBUG(LOG_MODULE_PROTOCOL, "RS485 data sent successfully");
         return true;
     } else {
@@ -368,13 +414,14 @@ static bool wait_for_response(UART_ID_t uart_id, const char* expected, uint32_t 
 static void send_heartbeat_data(void)
 {
     static uint32_t heartbeat_counter = 0;
-    
-    /* 每10次心跳发送一次4G状态查询 */
-    if ((heartbeat_counter % 10) == 0) {
+
+    /* 每1000次心跳发送一次4G状态查询 */
+    if ((heartbeat_counter % 1000) == 0) {
         /* 检查4G模块状态 */
         QuectelState_t state = Quectel4G_GetState();
         if (state >= QUECTEL_STATE_READY) {
-            CommuSend_4gAtCommand("AT", "OK", 2000);
+            static const AT_Cmd_Config_t at_cmd = {"AT", "OK", 2000, 1, NULL, false, NULL};
+            CommuSend_4gAtCommand(&at_cmd);
         }
     }
     
@@ -390,48 +437,3 @@ ModemState_t CommuSend_GetModemState(void)
     return s_modem_state;
 }
 
-/**
- * @brief 发送HTTP请求
- * @param url 请求URL
- * @param data 请求数据
- * @return BaseType_t 发送结果
- */
-BaseType_t CommuSend_HttpRequest(const char* url, const char* data)
-{
-    char command[256];
-    
-    if (!url) {
-        return pdFAIL;
-    }
-    
-    s_modem_state = MODEM_STATE_SENDING;
-    
-    /* 配置HTTP URL */
-    snprintf(command, sizeof(command), "AT+QHTTPURL=%d,80", (int)strlen(url));
-    if (CommuSend_4gAtCommand(command, "CONNECT", 5000) != pdPASS) {
-        s_modem_state = MODEM_STATE_ERROR;
-        return pdFAIL;
-    }
-    
-    /* 发送URL */
-    if (CommuSend_4gAtCommand(url, "OK", 5000) != pdPASS) {
-        s_modem_state = MODEM_STATE_ERROR;
-        return pdFAIL;
-    }
-    
-    /* 发送HTTP GET请求 */
-    if (data && strlen(data) > 0) {
-        /* POST请求 */
-        snprintf(command, sizeof(command), "AT+QHTTPPOST=%d,80,80", (int)strlen(data));
-        if (CommuSend_4gAtCommand(command, "CONNECT", 5000) == pdPASS) {
-            CommuSend_4gAtCommand(data, "OK", 10000);
-        }
-    } else {
-        /* GET请求 */
-        CommuSend_4gAtCommand("AT+QHTTPGET=80", "OK", 10000);
-    }
-    
-    s_modem_state = MODEM_STATE_CONNECTED;
-    LOG_INFO(LOG_MODULE_PROTOCOL, "HTTP request sent successfully");
-    return pdPASS;
-}

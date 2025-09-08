@@ -27,10 +27,10 @@ extern "C" {
 #define KEY_ReloadKey    0xAAAA
 
 /**
- * @brief 独立看门狗喂狗宏
+ * @brief 独立看门狗喂狗宏 - 暂时禁用用于调试重启问题
  * @note 用于在任务中定期重载看门狗计数器，防止系统重启
  */
-#define MACRO_IWDG_RELOAD()      IWDG->KEY = KEY_ReloadKey
+#define MACRO_IWDG_RELOAD()      do { /* 暂时禁用看门狗 */ } while(0)
 
 /**
  * @brief 推荐的看门狗喂狗间隔（毫秒）

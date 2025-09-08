@@ -341,7 +341,7 @@
               <MiscControls>--diag_suppress=68  --diag_suppress=111  --diag_suppress=550</MiscControls>
               <Define>USE_STDPERIPH_DRIVER,KINERGY_II_4G,N32G45X,USE_STDPERIPH_DRIVER,LV_CONF_INCLUDE_SIMPLE,USE_EMBEDDED_PHY,USE_USB_HS</Define>
               <Undefine></Undefine>
-              <IncludePath>..\..\FreeRTOS;..\..\FreeRTOS\include;..\..\FreeRTOS\portable\RVDS\ARM_CM4F;.\Source\develop\01_develop_tsk;.\Source\sdk\01_tsk;.\Source\sdk\02_software_api;.\Source\sdk\04_bsp;..\..\Firmware\CMSIS\device;..\..\Firmware\CMSIS\core;..\..\Firmware\n32g45x_std_periph_driver\inc;.\Source\sdk\00_Bootloader</IncludePath>
+              <IncludePath>..\..\FreeRTOS;..\..\FreeRTOS\include;..\..\FreeRTOS\portable\RVDS\ARM_CM4F;.\Source\sdk\00_Bootloader;.\Source\develop\01_develop_tsk;.\Source\sdk\01_tsk;.\Source\sdk\02_software_api;.\Source\sdk\04_bsp;..\..\Firmware\CMSIS\device;..\..\Firmware\CMSIS\core;..\..\Firmware\n32g45x_std_periph_driver\inc</IncludePath>
             </VariousControls>
           </Cads>
           <Aads>
@@ -474,6 +474,11 @@
               <FileName>md5.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Source\sdk\02_software_api\md5.c</FilePath>
+            </File>
+            <File>
+              <FileName>lte_module_init.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Source\sdk\02_software_api\lte_module_init.c</FilePath>
             </File>
           </Files>
         </Group>

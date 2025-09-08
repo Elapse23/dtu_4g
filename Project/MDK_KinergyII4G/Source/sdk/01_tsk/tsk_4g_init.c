@@ -6,16 +6,26 @@
  * @version     1.0
  * @date        2025-09-03
  * @note        负责移远4G模块的初始化、配置和状态管理
+ * 
+ * @architecture_note
+ * 数据接收架构说明：
+ * 1. 4G数据接收任务在模块初始化时即创建，而不是等到TCP连接成功后
+ * 2. 这样确保初始化期间的AT指令响应能够正确接收和处理
+ * 3. LTE串口数据流：tsk_commu_receive → 4G数据队列 → 4G数据接收任务
+ * 4. 数据接收任务持续运行，处理AT指令响应、Socket数据和模块事件
+ * 5. TCP连接断开时不停止数据接收任务，保证重连时的通信畅通
  * =====================================================================================
  */
 
 #include "tsk_4g_init.h"
+#include "lte_module_init.h"  // 添加LTE模块硬件控制头文件
 #include "FreeRTOS.h"
 #include "task.h"
 #include "semphr.h"
 #include "bsp_uart_ring_buffer.h"
 #include "bsp_log_manager.h"
-#include "bsp_watchdog.h"
+#include "tsk_commu_receive.h"
+#include "tsk_commu_send.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,6 +65,7 @@ static QuectelInitConfig_t s_init_config = {0};        /**< 初始化配置参�
 static bool s_init_completed = false;                  /**< 初始化完成标志 */
 static uint8_t s_hard_reset_count = 0;                 /**< 硬件重启计数器 */
 static uint8_t s_soft_reset_count = 0;                 /**< 软件重启计数器 */
+static bool s_lte_module_hardware_initialized = false; /**< LTE模块硬件初始化标志 */
 
 /**
  * @brief 全局4G设备信息实例
@@ -96,6 +107,7 @@ static bool check_network_registration_sequence(void);
 static bool get_network_status(void);                                       /**< 获取网络状态信息 */
 static bool perform_module_reset(bool hard_reset);
 static void reset_counters_on_success(void);
+static void cleanup_resources(uint8_t cleanup_mask);                        /**< 清理指定的资源 */
 
 /**
  * @brief 数据传输相关私有函数声明
@@ -110,6 +122,7 @@ static QuectelDataResult_t send_data_internal(uint8_t socket_id, const uint8_t* 
 static bool setup_socket_connection(QuectelProtocol_t protocol, const char* remote_ip, 
                                    uint16_t remote_port, uint16_t local_port);  /**< 建立Socket连接 */
 static void handle_socket_close_event(uint8_t socket_id);                    /**< 处理Socket关闭事件 */
+static void notify_at_response_received(const char* response, uint16_t length); /**< 通知AT响应接收 */
 static void update_network_statistics(uint16_t bytes_sent, uint16_t bytes_received);  /**< 更新网络统计 */
 
 /**
@@ -119,7 +132,7 @@ static void update_network_statistics(uint16_t bytes_sent, uint16_t bytes_receiv
 static void tcp_connection_monitor_task(void* pvParameters);                 /**< TCP连接监控任务 */
 static bool tcp_connect_with_retry(const Quectel4G_TcpServerConfig_t* config);  /**< 带重试的TCP连接 */
 static bool tcp_verify_connection(uint8_t socket_id);                       /**< 验证TCP连接状态 */
-static void tcp_handle_connection_event(uint8_t event_type, uint8_t socket_id, uint8_t error_code);  /**< 处理TCP连接事件 */
+static void tcp_handle_connection_event(TcpEventType_t event_type, uint8_t socket_id, uint8_t error_code);  /**< 处理TCP连接事件 */
 static bool tcp_send_heartbeat_internal(void);                              /**< 内部心跳发送 */
 static bool start_data_receive_task(void);                                  /**< 启动数据接收任务 */
 static void stop_data_receive_task(void);                                   /**< 停止数据接收任务 */
@@ -136,6 +149,8 @@ static bool device_wait_for_response(uint8_t expected_response, uint32_t timeout
 static void device_handle_register_event(DeviceRegisterState_t state, bool success, uint8_t command, uint8_t response);  /**< 处理注册事件 */
 static bool device_transition_to_next_state(void);                          /**< 状态机状态转换 */
 static void device_cleanup_register_tasks(void);                            /**< 清理注册相关任务 */
+static void default_tcp_event_callback(TcpEventType_t event_type, uint8_t socket_id, uint8_t error_code, void* user_data);  /**< 默认TCP事件回调 */
+static void auto_connect_tcp_server(void);                                  /**< 自动连接TCP服务器 */
 
 /* ============================= 静态变量定义 ============================= */
 
@@ -149,6 +164,12 @@ static QuectelConnectionCallback_t s_conn_callback = NULL;                  /**<
 static uint8_t* s_rx_buffer = NULL;                                         /**< 数据接收缓冲区 */
 static uint16_t s_rx_buffer_size = 1024;                                    /**< 接收缓冲区大小 */
 static SemaphoreHandle_t s_data_mutex = NULL;                               /**< 数据传输互斥量 */
+
+/* AT响应等待机制 - 用于统一AT指令响应处理 */
+static SemaphoreHandle_t s_at_response_mutex = NULL;                         /**< AT响应访问互斥量 */
+static char s_at_response_buffer[512];                                       /**< AT响应缓存 */
+static volatile bool s_at_response_ready = false;                            /**< AT响应就绪标志 */
+static SemaphoreHandle_t s_at_response_semaphore = NULL;                     /**< AT响应通知信号量 */
 static QueueHandle_t s_4g_data_queue = NULL;                                /**< 4G数据处理队列 */
 static SemaphoreHandle_t s_uart_mutex = NULL;                               /**< LTE串口访问互斥量 */
 
@@ -189,6 +210,14 @@ static uint8_t s_register_stats_failed = 0;                                 /**<
 #define DEVICE_REGISTER_TASK_STACK      2048                                /**< 设备注册任务栈大小 */
 #define REALTIME_DATA_TASK_STACK        1024                                /**< 实时数据任务栈大小 */
 
+/* 默认TCP服务器配置参数 */
+#define DEFAULT_TCP_SERVER_IP           "192.168.51.91"                     /**< 默认TCP服务器IP */
+#define DEFAULT_TCP_SERVER_PORT         8080                                 /**< 默认TCP服务器端口 */
+#define DEFAULT_TCP_CONNECT_TIMEOUT     30000                               /**< 默认TCP连接超时（毫秒） */
+#define DEFAULT_TCP_RETRY_COUNT         5                                    /**< 默认TCP重试次数 */
+#define DEFAULT_TCP_RETRY_INTERVAL      10000                               /**< 默认TCP重试间隔（毫秒） */
+#define DEFAULT_TCP_HEARTBEAT_INTERVAL  60                                  /**< 默认心跳间隔（秒） */
+
 /* ============================= 核心功能实现 ============================= */
 
 /**
@@ -206,10 +235,22 @@ static uint8_t s_register_stats_failed = 0;                                 /**<
 static void vQuectel4GInitTask(void* pvParameters)
 {
     (void)pvParameters;  /* 避免未使用参数警告 */
-    TickType_t last_status_check = 0;  /* 上次状态检查时间 */
+    TickType_t last_status_check = xTaskGetTickCount();
     
     LOG_INFO(LOG_MODULE_NETWORK, "Quectel 4G initialization task started");
     
+    /* 首先执行LTE硬件初始化（在任务中执行，避免阻塞主线程） */
+    if (!s_lte_module_hardware_initialized) {
+        LOG_INFO(LOG_MODULE_NETWORK, "Initializing LTE module hardware...");
+        lte_4g_module_hardware_reset();
+        // lte_4g_module_hardware_open();  // 这里有4秒延时，在任务中执行是安全的
+        s_lte_module_hardware_initialized = true;
+        LOG_INFO(LOG_MODULE_NETWORK, "LTE module hardware initialized successfully");
+    }
+    
+    // /* 设置状态为初始化中，开始执行初始化序列 */
+    // update_state(QUECTEL_STATE_INITIALIZING);
+
     /* 执行初始化序列 */
     perform_initialization_sequence();
     
@@ -237,6 +278,72 @@ static void vQuectel4GInitTask(void* pvParameters)
     }
 }
 
+/* ============================= 资源清理位掩码定义 ============================= */
+
+/* 资源清理位掩码 */
+#define CLEANUP_STATE_MUTEX     (1 << 0)    /**< 清理状态互斥量 */
+#define CLEANUP_DATA_MUTEX      (1 << 1)    /**< 清理数据传输互斥量 */
+#define CLEANUP_UART_MUTEX      (1 << 2)    /**< 清理串口访问互斥量 */
+#define CLEANUP_REGISTER_MUTEX  (1 << 3)    /**< 清理设备注册互斥量 */
+#define CLEANUP_RX_BUFFER       (1 << 4)    /**< 清理接收缓冲区 */
+#define CLEANUP_DATA_QUEUE      (1 << 5)    /**< 清理数据处理队列 */
+#define CLEANUP_DATA_TASK       (1 << 6)    /**< 清理数据接收任务 */
+#define CLEANUP_AT_RESPONSE     (1 << 7)    /**< 清理AT响应机制 */
+
+/* 常用清理组合宏 */
+#define CLEANUP_ALL_MUTEXES     (CLEANUP_STATE_MUTEX | CLEANUP_DATA_MUTEX | CLEANUP_UART_MUTEX | CLEANUP_REGISTER_MUTEX)
+#define CLEANUP_ALL_RESOURCES   (CLEANUP_ALL_MUTEXES | CLEANUP_RX_BUFFER | CLEANUP_DATA_QUEUE | CLEANUP_DATA_TASK | CLEANUP_AT_RESPONSE)
+
+/**
+ * @brief 清理已创建的资源
+ * @param cleanup_mask 清理位掩码（指定需要清理的资源）
+ */
+static void cleanup_resources(uint8_t cleanup_mask)
+{
+    if ((cleanup_mask & CLEANUP_STATE_MUTEX) && s_state_mutex) {
+        vSemaphoreDelete(s_state_mutex);
+        s_state_mutex = NULL;
+    }
+    if ((cleanup_mask & CLEANUP_DATA_MUTEX) && s_data_mutex) {
+        vSemaphoreDelete(s_data_mutex);
+        s_data_mutex = NULL;
+    }
+    if ((cleanup_mask & CLEANUP_UART_MUTEX) && s_uart_mutex) {
+        vSemaphoreDelete(s_uart_mutex);
+        s_uart_mutex = NULL;
+    }
+    if ((cleanup_mask & CLEANUP_REGISTER_MUTEX) && s_register_mutex) {
+        vSemaphoreDelete(s_register_mutex);
+        s_register_mutex = NULL;
+    }
+    if ((cleanup_mask & CLEANUP_RX_BUFFER) && s_rx_buffer) {
+        vPortFree(s_rx_buffer);
+        s_rx_buffer = NULL;
+    }
+    if ((cleanup_mask & CLEANUP_DATA_QUEUE) && s_4g_data_queue) {
+        vQueueDelete(s_4g_data_queue);
+        s_4g_data_queue = NULL;
+    }
+    if ((cleanup_mask & CLEANUP_DATA_TASK) && s_data_receive_task_handle) {
+        vTaskDelete(s_data_receive_task_handle);
+        s_data_receive_task_handle = NULL;
+    }
+    
+    /* 清理AT响应机制 */
+    if (cleanup_mask & CLEANUP_AT_RESPONSE) {
+        if (s_at_response_mutex) {
+            vSemaphoreDelete(s_at_response_mutex);
+            s_at_response_mutex = NULL;
+        }
+        if (s_at_response_semaphore) {
+            vSemaphoreDelete(s_at_response_semaphore);
+            s_at_response_semaphore = NULL;
+        }
+        s_at_response_ready = false;
+        LOG_DEBUG(LOG_MODULE_NETWORK, "AT response mechanism cleaned up");
+    }
+}
+
 /**
  * @brief 初始化4G模块初始化任务
  * @param config 初始化配置指针，NULL使用默认配置
@@ -244,7 +351,7 @@ static void vQuectel4GInitTask(void* pvParameters)
  */
 BaseType_t Quectel4G_Init(const QuectelInitConfig_t* config)
 {
-    BaseType_t result = pdPASS;
+    BaseType_t result;
     
     /* 使用默认配置或用户配置 */
     if (config) {
@@ -259,84 +366,89 @@ BaseType_t Quectel4G_Init(const QuectelInitConfig_t* config)
     g_quectel4g_info.context_id = 1;  // 默认使用上下文ID 1
     g_quectel4g_info.connection_type = 0;  // 默认TCP连接
     
-    /* 创建状态互斥量 */
+    /* 创建同步资源 */
     s_state_mutex = xSemaphoreCreateMutex();
-    if (s_state_mutex == NULL) {
+    if (!s_state_mutex) {
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create state mutex");
         return pdFAIL;
     }
     
-    /* 创建数据传输互斥量 */
     s_data_mutex = xSemaphoreCreateMutex();
-    if (s_data_mutex == NULL) {
+    if (!s_data_mutex) {
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create data mutex");
-        vSemaphoreDelete(s_state_mutex);
+        cleanup_resources(CLEANUP_STATE_MUTEX);
         return pdFAIL;
     }
     
-    /* 创建LTE串口访问互斥量 */
     s_uart_mutex = xSemaphoreCreateMutex();
-    if (s_uart_mutex == NULL) {
+    if (!s_uart_mutex) {
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create UART mutex");
-        vSemaphoreDelete(s_state_mutex);
-        vSemaphoreDelete(s_data_mutex);
+        cleanup_resources(CLEANUP_STATE_MUTEX | CLEANUP_DATA_MUTEX);
         return pdFAIL;
     }
     
-    /* 创建设备注册互斥量 */
+    /* 创建AT响应等待机制 */
+    s_at_response_mutex = xSemaphoreCreateMutex();
+    if (!s_at_response_mutex) {
+        LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create AT response mutex");
+        cleanup_resources(CLEANUP_STATE_MUTEX | CLEANUP_DATA_MUTEX | CLEANUP_UART_MUTEX);
+        return pdFAIL;
+    }
+    
+    s_at_response_semaphore = xSemaphoreCreateBinary();
+    if (!s_at_response_semaphore) {
+        LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create AT response semaphore");
+        cleanup_resources(CLEANUP_STATE_MUTEX | CLEANUP_DATA_MUTEX | CLEANUP_UART_MUTEX | CLEANUP_AT_RESPONSE);
+        return pdFAIL;
+    }
+    
     s_register_mutex = xSemaphoreCreateMutex();
-    if (s_register_mutex == NULL) {
+    if (!s_register_mutex) {
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create register mutex");
-        vSemaphoreDelete(s_state_mutex);
-        vSemaphoreDelete(s_data_mutex);
-        vSemaphoreDelete(s_uart_mutex);
+        cleanup_resources(CLEANUP_STATE_MUTEX | CLEANUP_DATA_MUTEX | CLEANUP_UART_MUTEX);
         return pdFAIL;
     }
     
-    /* 初始化数据传输相关配置 */
+    /* 初始化数据传输配置 */
     s_rx_callback = s_init_config.rx_callback;
     s_conn_callback = s_init_config.conn_callback;
     s_rx_buffer_size = s_init_config.rx_buffer_size > 0 ? s_init_config.rx_buffer_size : 1024;
     
     /* 分配接收缓冲区 */
     s_rx_buffer = (uint8_t*)pvPortMalloc(s_rx_buffer_size);
-    if (s_rx_buffer == NULL) {
+    if (!s_rx_buffer) {
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to allocate RX buffer");
-        vSemaphoreDelete(s_state_mutex);
-        vSemaphoreDelete(s_data_mutex);
-        vSemaphoreDelete(s_uart_mutex);
-        vSemaphoreDelete(s_register_mutex);
+        cleanup_resources(CLEANUP_ALL_MUTEXES);
         return pdFAIL;
     }
     
-    /* 创建4G数据处理队列 */
+    /* 创建数据处理队列 */
     s_4g_data_queue = xQueueCreate(QUEUE_LENGTH, QUEUE_ITEM_SIZE);
-    if (s_4g_data_queue == NULL) {
+    if (!s_4g_data_queue) {
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create 4G data queue");
-        vSemaphoreDelete(s_state_mutex);
-        vSemaphoreDelete(s_data_mutex);
-        vSemaphoreDelete(s_uart_mutex);
-        vSemaphoreDelete(s_register_mutex);
-        vPortFree(s_rx_buffer);
+        cleanup_resources(CLEANUP_ALL_MUTEXES | CLEANUP_RX_BUFFER);
         return pdFAIL;
     }
     
+    /* 立即创建数据接收任务，确保在初始化期间能接收AT指令响应 */
+    if (!start_data_receive_task()) {
+        LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create 4G data receive task");
+        cleanup_resources(CLEANUP_ALL_MUTEXES | CLEANUP_RX_BUFFER | CLEANUP_DATA_QUEUE);
+        return pdFAIL;
+    }
+    
+
     /* 创建初始化任务 */
     result = xTaskCreate(vQuectel4GInitTask, "Quectel4GInit", INIT_TASK_STACK_SIZE,
                         NULL, INIT_TASK_PRIORITY, &s_init_task_handle);
     
     if (result != pdPASS) {
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create 4G init task");
-        vSemaphoreDelete(s_state_mutex);
-        vSemaphoreDelete(s_data_mutex);
-        vSemaphoreDelete(s_uart_mutex);
-        vSemaphoreDelete(s_register_mutex);
-        vPortFree(s_rx_buffer);
-        vQueueDelete(s_4g_data_queue);
+        cleanup_resources(CLEANUP_ALL_RESOURCES);
         return pdFAIL;
     }
     
-    LOG_INFO(LOG_MODULE_NETWORK, "Quectel 4G init task created successfully");
+    LOG_INFO(LOG_MODULE_NETWORK, "Quectel 4G simplified initialization completed");
     return pdPASS;
 }
 
@@ -360,86 +472,24 @@ static void perform_initialization_sequence(void)
     
     /* 定义初始化AT指令序列 */
     const AT_Cmd_Config_t init_sequence[] = {
+        /* 等待模块准备就绪信号 */
+        {NULL, "RDY", 15000, 1, "Wait for module ready signal", false, NULL},
         /* 基本通信测试 */
-        {
-            .at_cmd = "AT",
-            .expected_resp = "OK",
-            .timeout_ms = 3000,
-            .retries = 3,
-            .description = "Basic AT communication test",
-            .critical = true,  // 关键指令：通信失败需要重新开始
-            .callback = at_callback_basic_test
-        },
+        {"AT", "OK", 3000, 3, "Basic AT communication test", true, at_callback_basic_test},
         /* 设置回显模式 */
-        {
-            .at_cmd = s_init_config.enable_echo ? "ATE1" : "ATE0",
-            .expected_resp = "OK",
-            .timeout_ms = 3000,
-            .retries = 2,
-            .description = "Set echo mode",
-            .critical = false,  // 非关键指令：失败可以继续
-            .callback = NULL
-        },
+        {s_init_config.enable_echo ? "ATE1" : "ATE0", "OK", 3000, 2, "Set echo mode", false, NULL},
         /* 设置全功能模式 */
-        {
-            .at_cmd = "AT+CFUN=1",
-            .expected_resp = "OK",
-            .timeout_ms = 10000,
-            .retries = 2,
-            .description = "Set full functionality mode",
-            .critical = true,   // 关键指令：功能模式设置失败需要重新开始
-            .callback = NULL
-        },
+        {"AT+CFUN=1", "OK", 10000, 2, "Set full functionality mode", true, NULL},
         /* 获取版本信息 */
-        {
-            .at_cmd = "ATI",
-            .expected_resp = "OK",
-            .timeout_ms = 5000,
-            .retries = 1,
-            .description = "Get version information",
-            .critical = false,  // 非关键指令：版本信息获取失败可以继续
-            .callback = at_callback_get_version
-        },
+        {"ATI", "OK", 5000, 1, "Get version information", false, at_callback_get_version},
         /* 获取IMEI */
-        {
-            .at_cmd = "AT+GSN",
-            .expected_resp = "OK",
-            .timeout_ms = 5000,
-            .retries = 1,
-            .description = "Get IMEI",
-            .critical = false,  // 非关键指令：IMEI获取失败可以继续
-            .callback = at_callback_get_imei
-        },
+        {"AT+GSN", "OK", 5000, 1, "Get IMEI", false, at_callback_get_imei},
         /* 获取ICCID */
-        {
-            .at_cmd = "AT+QCCID",
-            .expected_resp = "OK",
-            .timeout_ms = 5000,
-            .retries = 1,
-            .description = "Get ICCID",
-            .critical = false,  // 非关键指令：ICCID获取失败可以继续
-            .callback = at_callback_get_iccid
-        },
+        {"AT+QCCID", "OK", 5000, 1, "Get ICCID", false, at_callback_get_iccid},
         /* 获取IMSI */
-        {
-            .at_cmd = "AT+CIMI",
-            .expected_resp = "OK",
-            .timeout_ms = 5000,
-            .retries = 1,
-            .description = "Get IMSI",
-            .critical = false,  // 非关键指令：IMSI获取失败可以继续
-            .callback = at_callback_get_imsi
-        },
+        {"AT+CIMI", "OK", 5000, 1, "Get IMSI", false, at_callback_get_imsi},
         /* 检查SIM卡状态 */
-        {
-            .at_cmd = "AT+CPIN?",
-            .expected_resp = "READY",
-            .timeout_ms = 5000,
-            .retries = 3,
-            .description = "Check SIM card status",
-            .critical = true,   // 关键指令：SIM卡未就绪需要重新开始
-            .callback = at_callback_check_sim
-        }
+        {"AT+CPIN?", "READY", 5000, 3, "Check SIM card status", true, at_callback_check_sim}
     };
     
     const uint8_t init_cmd_count = sizeof(init_sequence) / sizeof(AT_Cmd_Config_t);
@@ -477,14 +527,14 @@ static void perform_initialization_sequence(void)
             retry_count++;
             if (retry_count < s_init_config.max_retry_count) {
                 /* 根据重试次数采用不同的重启策略 */
-                if (retry_count >= 2) {  /* 前两次失败后尝试软件重启 */
+                if (retry_count >= 4) {  /* 前四次失败后尝试软件重启 */
                     LOG_WARN(LOG_MODULE_NETWORK, "Initialization failed %d times, attempting soft reset", retry_count);
-                    if (!perform_module_reset(false)) {  /* 执行软件重启 */
+                    if (!perform_module_reset(true)) {  /* TODO  执行软件重启  全都执行硬件重启,软件重启将true改为false即可*/
                         LOG_ERROR(LOG_MODULE_NETWORK, "Soft reset failed, will try hard reset next");
                     }
                 } else {
-                    LOG_WARN(LOG_MODULE_NETWORK, "Initialization failed, retrying in %d ms", 
-                            INIT_RETRY_DELAY_MS);
+                    // LOG_WARN(LOG_MODULE_NETWORK, "Initialization failed, retrying in %d ms", 
+                    //         INIT_RETRY_DELAY_MS);
                 }
                 vTaskDelay(pdMS_TO_TICKS(INIT_RETRY_DELAY_MS));
             } else {
@@ -513,6 +563,9 @@ static void perform_initialization_sequence(void)
         
         /* 获取初始网络状态 */
         (void)get_network_status();
+        
+        /* 自动连接TCP服务器 */
+        auto_connect_tcp_server();
     } else {
         update_state(QUECTEL_STATE_ERROR);
         LOG_ERROR(LOG_MODULE_NETWORK, "Quectel 4G initialization failed after %d attempts and %d hard resets", 
@@ -531,25 +584,9 @@ static bool check_network_registration_sequence(void)
     /* 定义网络注册检查序列 */
     const AT_Cmd_Config_t registration_sequence[] = {
         /* 检查网络注册状态 */
-        {
-            .at_cmd = "AT+CREG?",
-            .expected_resp = "+CREG:",
-            .timeout_ms = 5000,
-            .retries = 30,  // 最多重试30次，每次1秒
-            .description = "Check network registration status",
-            .critical = true,   // 关键指令：网络注册失败需要重新开始
-            .callback = at_callback_network_reg
-        },
+        {"AT+CREG?", "+CREG:", 5000, 30, "Check network registration status", true, at_callback_network_reg},
         /* 检查GPRS注册状态 */
-        {
-            .at_cmd = "AT+CGREG?",
-            .expected_resp = "+CGREG:",
-            .timeout_ms = 5000,
-            .retries = 5,
-            .description = "Check GPRS registration status",
-            .critical = false,  // 非关键指令：GPRS注册失败可以继续
-            .callback = NULL
-        }
+        {"AT+CGREG?", "+CGREG:", 5000, 5, "Check GPRS registration status", false, NULL}
     };
     
     const uint8_t reg_cmd_count = sizeof(registration_sequence) / sizeof(AT_Cmd_Config_t);
@@ -575,35 +612,11 @@ static bool setup_data_connection_sequence(void)
     /* 定义数据连接建立序列 */
     AT_Cmd_Config_t connection_sequence[] = {
         /* 配置APN */
-        {
-            .at_cmd = apn_command,
-            .expected_resp = "OK",
-            .timeout_ms = 5000,
-            .retries = 2,
-            .description = "Configure APN settings",
-            .critical = true,   // 关键指令：APN配置失败需要重新开始
-            .callback = NULL
-        },
+        {apn_command, "OK", 5000, 2, "Configure APN settings", true, NULL},
         /* 激活PDP上下文 */
-        {
-            .at_cmd = "AT+QIACT=1",
-            .expected_resp = "OK",
-            .timeout_ms = 15000,
-            .retries = 3,
-            .description = "Activate PDP context",
-            .critical = true,   // 关键指令：PDP上下文激活失败需要重新开始
-            .callback = NULL
-        },
+        {"AT+QIACT=1", "OK", 15000, 3, "Activate PDP context", true, NULL},
         /* 查询IP地址 */
-        {
-            .at_cmd = "AT+QIACT?",
-            .expected_resp = "+QIACT:",
-            .timeout_ms = 3000,
-            .retries = 1,
-            .description = "Query IP address",
-            .critical = false,  // 非关键指令：IP查询失败可以继续
-            .callback = NULL
-        }
+        {"AT+QIACT?", "+QIACT:", 3000, 1, "Query IP address", false, NULL}
     };
     
     const uint8_t conn_cmd_count = sizeof(connection_sequence) / sizeof(AT_Cmd_Config_t);
@@ -629,45 +642,13 @@ static bool get_network_status(void)
     /* 定义网络状态查询指令序列 */
     const AT_Cmd_Config_t status_sequence[] = {
         /* 获取信号质量 */
-        {
-            .at_cmd = "AT+CSQ",
-            .expected_resp = "OK",
-            .timeout_ms = 3000,
-            .retries = 1,
-            .description = "Get signal quality",
-            .critical = false,  // 非关键指令：信号质量查询失败可以继续
-            .callback = at_callback_signal_quality
-        },
+        {"AT+CSQ", "OK", 3000, 1, "Get signal quality", false, at_callback_signal_quality},
         /* 获取运营商信息 */
-        {
-            .at_cmd = "AT+COPS?",
-            .expected_resp = "OK",
-            .timeout_ms = 5000,
-            .retries = 1,
-            .description = "Get operator information",
-            .critical = false,  // 非关键指令：运营商信息查询失败可以继续
-            .callback = at_callback_operator_info
-        },
+        {"AT+COPS?", "OK", 5000, 1, "Get operator information", false, at_callback_operator_info},
         /* 检查网络注册状态 */
-        {
-            .at_cmd = "AT+CREG?",
-            .expected_resp = "OK",
-            .timeout_ms = 3000,
-            .retries = 1,
-            .description = "Check network registration",
-            .critical = false,  // 非关键指令：状态监控中的网络注册查询失败可以继续
-            .callback = at_callback_network_reg
-        },
+        {"AT+CREG?", "OK", 3000, 1, "Check network registration", false, at_callback_network_reg},
         /* 检查数据连接状态 */
-        {
-            .at_cmd = "AT+QIACT?",
-            .expected_resp = "OK",
-            .timeout_ms = 3000,
-            .retries = 1,
-            .description = "Check data connection status",
-            .critical = false,  // 非关键指令：数据连接状态查询失败可以继续
-            .callback = NULL
-        }
+        {"AT+QIACT?", "OK", 3000, 1, "Check data connection status", false, NULL}
     };
     
     const uint8_t status_cmd_count = sizeof(status_sequence) / sizeof(AT_Cmd_Config_t);
@@ -785,66 +766,89 @@ BaseType_t Quectel4G_Reinitialize(void)
 }
 
 /**
- * @brief 获取响应数据（仅用于AT指令响应）
- * @details 专门用于AT指令的同步响应等待，使用互斥量保护串口访问
+ * @brief 获取响应数据（队列模式）
+ * @details 通过信号量等待队列处理线程提供的AT指令响应
  * 
  * @param response_buffer 响应缓冲区
  * @param buffer_size 缓冲区大小
  * @param timeout_ms 超时时间
  * @return bool 是否成功获取数据
  * 
- * @note 此函数仅用于AT指令的同步响应，异步数据接收通过队列处理
+ * @note 此函数等待队列处理任务转发的AT指令响应，避免与异步数据处理冲突
  */
 static bool get_response_data(char* response_buffer, size_t buffer_size, uint32_t timeout_ms)
 {
-    uint32_t start_time;
-    uint32_t elapsed_time;
-    size_t total_received = 0;
     bool result = false;
+    TickType_t start_tick = xTaskGetTickCount();
     
     if (!response_buffer || buffer_size == 0) {
+        LOG_ERROR(LOG_MODULE_NETWORK, "Invalid parameters for get_response_data");
         return false;
     }
     
-    /* 获取串口访问互斥量 */
-    if (xSemaphoreTake(s_uart_mutex, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
-        LOG_WARN(LOG_MODULE_NETWORK, "Failed to acquire UART mutex for AT response");
+    /* 检查信号量和互斥量是否有效 */
+    if (!s_at_response_semaphore || !s_at_response_mutex) {
+        LOG_ERROR(LOG_MODULE_NETWORK, "AT response synchronization objects not initialized");
+        /* 尝试直接从UART读取数据作为回退机制 */
+        vTaskDelay(pdMS_TO_TICKS(timeout_ms));
+        snprintf(response_buffer, buffer_size, "TIMEOUT");
         return false;
     }
     
-    response_buffer[0] = '\0';
-    start_time = xTaskGetTickCount();
+    LOG_DEBUG(LOG_MODULE_NETWORK, "Waiting for AT response (timeout: %d ms)...", timeout_ms);
     
-    while (total_received < (buffer_size - 1)) {
-        /* 检查超时 */
-        elapsed_time = (xTaskGetTickCount() - start_time) * portTICK_PERIOD_MS;
-        if (elapsed_time >= timeout_ms) {
-            break;
+    /* 清空响应就绪标志 */
+    if (xSemaphoreTake(s_at_response_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        s_at_response_ready = false;
+        xSemaphoreGive(s_at_response_mutex);
+    }
+    
+    /* 等待AT响应信号量 */
+    if (xSemaphoreTake(s_at_response_semaphore, pdMS_TO_TICKS(timeout_ms)) == pdTRUE) {
+        LOG_DEBUG(LOG_MODULE_NETWORK, "AT response semaphore received");
+        /* 获取互斥量并复制响应数据 */
+        if (xSemaphoreTake(s_at_response_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+            if (s_at_response_ready) {
+                /* 复制响应到用户缓冲区 */
+                size_t copy_length = strlen(s_at_response_buffer);
+                if (copy_length >= buffer_size) {
+                    copy_length = buffer_size - 1;
+                }
+                memcpy(response_buffer, s_at_response_buffer, copy_length);
+                response_buffer[copy_length] = '\0';
+                
+                /* 重置响应就绪标志 */
+                s_at_response_ready = false;
+                result = true;
+                
+                LOG_INFO(LOG_MODULE_NETWORK, "Retrieved AT response from queue (len: %d): [%s]", copy_length, response_buffer);
+            } else {
+                LOG_WARN(LOG_MODULE_NETWORK, "AT response not ready despite semaphore signal");
+            }
+            xSemaphoreGive(s_at_response_mutex);
+        } else {
+            LOG_ERROR(LOG_MODULE_NETWORK, "Failed to acquire AT response mutex");
         }
+    } else {
+        TickType_t elapsed_ticks = xTaskGetTickCount() - start_tick;
+        uint32_t elapsed_ms = elapsed_ticks * portTICK_PERIOD_MS;
+        // LOG_WARN(LOG_MODULE_NETWORK, "AT response timeout after %d ms (actual: %d ms)", timeout_ms, elapsed_ms);
         
-        /* 检查可用数据 */
-        uint32_t available = UART_RingBuffer_GetAvailableBytes(UART_ID_LTE);
-        if (available > 0) {
-            uint16_t bytes_to_read = (available > (buffer_size - total_received - 1)) ? 
-                                   (buffer_size - total_received - 1) : available;
-            
-            UART_Status_t uart_result = UART_RingBuffer_Receive(UART_ID_LTE, 
-                                    (uint8_t*)(response_buffer + total_received), 
-                                    bytes_to_read, 100);
-            if (uart_result == UART_OK) {
-                total_received += bytes_to_read;
+        /* 超时后清理可能的残留信号 */
+        if (uxSemaphoreGetCount(s_at_response_semaphore) > 0) {
+            // LOG_WARN(LOG_MODULE_NETWORK, "Clearing residual semaphore signals");
+            while(xSemaphoreTake(s_at_response_semaphore, 0) == pdTRUE) {
+                // 清空所有残留信号
             }
         }
         
-        vTaskDelay(pdMS_TO_TICKS(10));
+        /* 强制设置超时响应 */
+        snprintf(response_buffer, buffer_size, "TIMEOUT");
     }
     
-    response_buffer[total_received] = '\0';
-    result = (total_received > 0);
-    
-    /* 释放串口访问互斥量 */
-    xSemaphoreGive(s_uart_mutex);
-    
+    // LOG_DEBUG(LOG_MODULE_NETWORK, "get_response_data result: %s (elapsed: %d ms)", 
+    //          result ? "SUCCESS" : "FAILED", 
+    //          (xTaskGetTickCount() - start_tick) * portTICK_PERIOD_MS);
     return result;
 }
 
@@ -861,35 +865,101 @@ static AT_Result_t execute_at_command_with_config(const AT_Cmd_Config_t* cmd_con
     AT_Result_t result = AT_RESULT_ERROR;
     uint8_t retry_count = 0;
     
-    if (!cmd_config || !cmd_config->at_cmd) {
+    if (!cmd_config) {
+        LOG_ERROR(LOG_MODULE_NETWORK, "AT command config is NULL");
         return AT_RESULT_ERROR;
     }
     
-    LOG_DEBUG(LOG_MODULE_NETWORK, "Executing AT command: %s (%s)", 
+    /* 特殊处理：仅等待响应，不发送指令 */
+    if (cmd_config->at_cmd == NULL) {
+        LOG_DEBUG(LOG_MODULE_NETWORK, "Waiting for module response: %s (%s)", 
+                 cmd_config->expected_resp ? cmd_config->expected_resp : "Any", 
+                 cmd_config->description ? cmd_config->description : "No description");
+        vTaskDelay(pdMS_TO_TICKS(100));
+        /* 仅等待响应，重试循环 */
+        while (retry_count <= cmd_config->retries) {
+            /* 获取响应 */
+            if (get_response_data(response_buffer, sizeof(response_buffer), cmd_config->timeout_ms)) {
+                LOG_INFO(LOG_MODULE_NETWORK, "Wait response received: [%s]", response_buffer);
+                /* 检查期望响应 */
+                if (cmd_config->expected_resp) {
+                    if (strstr(response_buffer, cmd_config->expected_resp) != NULL) {
+                        result = AT_RESULT_OK;
+                        LOG_INFO(LOG_MODULE_NETWORK, "Successfully received expected response: %s", cmd_config->expected_resp);
+                        
+                        /* 特殊处理：RDY信号后需要额外延时让模块完全准备好 */
+                        if (strstr(cmd_config->expected_resp, "RDY") != NULL) {
+                            LOG_INFO(LOG_MODULE_NETWORK, "RDY signal received, waiting for module to be fully ready...");
+                            vTaskDelay(pdMS_TO_TICKS(1000));  // RDY后延时1秒
+                        }
+                        
+                        break;
+                    } else {
+                        result = AT_RESULT_TIMEOUT;
+                        LOG_WARN(LOG_MODULE_NETWORK, "Unexpected response while waiting for: %s", cmd_config->expected_resp);
+                    }
+                } else {
+                    /* 不检查响应内容，有数据即认为成功 */
+                    result = AT_RESULT_OK;
+                    break;
+                }
+            } else {
+                result = AT_RESULT_TIMEOUT;
+                LOG_WARN(LOG_MODULE_NETWORK, "Timeout waiting for response: %s", 
+                        cmd_config->expected_resp ? cmd_config->expected_resp : "Any");
+            }
+            
+            retry_count++;
+            if (retry_count <= cmd_config->retries) {
+                LOG_INFO(LOG_MODULE_NETWORK, "Retrying wait for response (%d/%d): %s", 
+                        retry_count, cmd_config->retries, 
+                        cmd_config->expected_resp ? cmd_config->expected_resp : "Any");
+                vTaskDelay(pdMS_TO_TICKS(1000));  // 重试前延时
+            }
+        }
+        
+        /* 如果重试次数用尽 */
+        if (retry_count > cmd_config->retries && result != AT_RESULT_OK) {
+            result = AT_RESULT_RETRY_EXHAUSTED;
+            LOG_ERROR(LOG_MODULE_NETWORK, "Wait for response retry exhausted: %s", 
+                     cmd_config->expected_resp ? cmd_config->expected_resp : "Any");
+        }
+        
+        /* 调用回调函数 */
+        if (cmd_config->callback) {
+            cmd_config->callback(response_buffer, result);
+        }
+        
+        return result;
+    }
+    
+    LOG_INFO(LOG_MODULE_NETWORK, "Executing AT command: [%s] (%s)", 
              cmd_config->at_cmd, cmd_config->description ? cmd_config->description : "No description");
     
     /* 重试循环 */
     while (retry_count <= cmd_config->retries) {
-        /* 格式化AT命令 */
         snprintf(at_command, sizeof(at_command), "%s\r\n", cmd_config->at_cmd);
-        
         /* 发送命令 */
-        uart_result = UART_RingBuffer_Send(UART_ID_LTE, (const uint8_t*)at_command, 
-                                         strlen(at_command), cmd_config->timeout_ms);
+        BaseType_t send_result = CommuSend_UartData(UART_ID_LTE, (const uint8_t*)at_command, 
+                                                   strlen(at_command), cmd_config->timeout_ms);
         
-        if (uart_result != UART_OK) {
-            LOG_ERROR(LOG_MODULE_NETWORK, "Failed to send AT command: %s", cmd_config->at_cmd);
+        if (send_result != pdPASS) {
+            LOG_ERROR(LOG_MODULE_NETWORK, "Failed to send AT command (result: %d): %s", send_result, cmd_config->at_cmd);
             retry_count++;
             continue;
         }
         
+        LOG_DEBUG(LOG_MODULE_NETWORK, "AT command sent successfully, waiting for response...");
+        
         /* 获取响应 */
         if (get_response_data(response_buffer, sizeof(response_buffer), cmd_config->timeout_ms)) {
+            LOG_INFO(LOG_MODULE_NETWORK, "AT command response received: [%s]", response_buffer);
+            
             /* 检查期望响应 */
             if (cmd_config->expected_resp) {
                 if (strstr(response_buffer, cmd_config->expected_resp) != NULL) {
                     result = AT_RESULT_OK;
-                    LOG_DEBUG(LOG_MODULE_NETWORK, "AT command successful: %s", cmd_config->at_cmd);
+                    LOG_INFO(LOG_MODULE_NETWORK, "AT command successful: %s", cmd_config->at_cmd);
                     break;
                 } else if (strstr(response_buffer, "ERROR") != NULL) {
                     result = AT_RESULT_ERROR;
@@ -901,11 +971,18 @@ static AT_Result_t execute_at_command_with_config(const AT_Cmd_Config_t* cmd_con
             } else {
                 /* 不检查响应，认为成功 */
                 result = AT_RESULT_OK;
+                LOG_INFO(LOG_MODULE_NETWORK, "AT command completed (no response check): %s", cmd_config->at_cmd);
                 break;
             }
         } else {
             result = AT_RESULT_TIMEOUT;
-            LOG_WARN(LOG_MODULE_NETWORK, "AT command timeout: %s", cmd_config->at_cmd);
+            // LOG_WARN(LOG_MODULE_NETWORK, "AT command timeout (no response): %s", cmd_config->at_cmd);
+            
+            /* 添加紧急退出机制：如果是用户命令，不要无限重试 */
+            if (strstr(cmd_config->description, "User") != NULL) {
+                LOG_WARN(LOG_MODULE_NETWORK, "User command timeout, breaking retry loop");
+                break;
+            }
         }
         
         retry_count++;
@@ -919,8 +996,10 @@ static AT_Result_t execute_at_command_with_config(const AT_Cmd_Config_t* cmd_con
     /* 如果重试次数用尽 */
     if (retry_count > cmd_config->retries && result != AT_RESULT_OK) {
         result = AT_RESULT_RETRY_EXHAUSTED;
-        LOG_ERROR(LOG_MODULE_NETWORK, "AT command retry exhausted: %s", cmd_config->at_cmd);
+        // LOG_ERROR(LOG_MODULE_NETWORK, "AT command retry exhausted: %s", cmd_config->at_cmd);
     }
+    
+    // LOG_INFO(LOG_MODULE_NETWORK, "AT command execution completed: [%s], result: %d", cmd_config->at_cmd, result);
     
     /* 调用回调函数 */
     if (cmd_config->callback) {
@@ -971,29 +1050,25 @@ bool Quectel4G_ExecuteAtSequence(const AT_Cmd_Config_t* cmd_sequence, uint8_t co
     
     /* 逐个执行AT指令序列 */
     for (i = 0; i < count; i++) {
+        const char* cmd_display = cmd_sequence[i].at_cmd ? cmd_sequence[i].at_cmd : 
+                                 (cmd_sequence[i].expected_resp ? cmd_sequence[i].expected_resp : "Wait");
         LOG_DEBUG(LOG_MODULE_NETWORK, "Executing command %d/%d: %s", 
-                 i + 1, count, cmd_sequence[i].at_cmd);
+                 i + 1, count, cmd_display);
         
         result = execute_at_command_with_config(&cmd_sequence[i]);
         
         if (result != AT_RESULT_OK) {
-            LOG_ERROR(LOG_MODULE_NETWORK, "AT sequence failed at command %d: %s", 
-                     i + 1, cmd_sequence[i].at_cmd);
             all_success = false;
-            
             /* 检查是否为关键指令失败 */
             if (cmd_sequence[i].critical) {
-                LOG_ERROR(LOG_MODULE_NETWORK, "Critical AT command failed: %s", cmd_sequence[i].at_cmd);
-                LOG_ERROR(LOG_MODULE_NETWORK, "Stopping AT sequence due to critical failure");
                 break;  /* 关键指令失败，立即停止序列执行 */
             }
-            
             /* 非关键指令失败处理 */
             if (result == AT_RESULT_RETRY_EXHAUSTED) {
                 LOG_WARN(LOG_MODULE_NETWORK, "Non-critical command retry exhausted, continuing with next command");
             }
         } else {
-            LOG_DEBUG(LOG_MODULE_NETWORK, "Command executed successfully: %s", cmd_sequence[i].at_cmd);
+            LOG_DEBUG(LOG_MODULE_NETWORK, "Command executed successfully: %s", cmd_display);
         }
         
         /* 指令间适当延时，避免发送过快 */
@@ -1001,10 +1076,8 @@ bool Quectel4G_ExecuteAtSequence(const AT_Cmd_Config_t* cmd_sequence, uint8_t co
             vTaskDelay(pdMS_TO_TICKS(500));
         }
     }
-    
-    LOG_INFO(LOG_MODULE_NETWORK, "AT command sequence completed. Success: %s", 
-            all_success ? "Yes" : "No");
-    
+    // LOG_INFO(LOG_MODULE_NETWORK, "AT command sequence completed. Success: %s", 
+    //         all_success ? "Yes" : "No");
     return all_success;
 }
 
@@ -1018,7 +1091,7 @@ static void at_callback_basic_test(const char* resp, AT_Result_t result)
     if (result == AT_RESULT_OK) {
         LOG_INFO(LOG_MODULE_NETWORK, "4G module responds to AT commands");
     } else {
-        LOG_ERROR(LOG_MODULE_NETWORK, "4G module not responding to AT commands");
+        // LOG_ERROR(LOG_MODULE_NETWORK, "4G module not responding to AT commands");
     }
 }
 
@@ -1246,16 +1319,7 @@ static bool perform_module_reset(bool hard_reset)
     if (hard_reset) {
         LOG_INFO(LOG_MODULE_NETWORK, "Performing hardware reset of 4G module");
         s_hard_reset_count++;
-        
-        /* 硬件重启逻辑 - 需要根据具体硬件实现 */
-        /* 这里提供标准的GPIO控制重启引脚的实现模板 */
-        
-        // TODO: 根据实际硬件设计实现硬件重启逻辑
-        // 典型实现示例：
-        // GPIO_ResetPin(4G_RESET_PIN, GPIO_PIN_RESET);     /* 拉低RESET引脚 */
-        // vTaskDelay(pdMS_TO_TICKS(MODULE_RESET_PULSE_MS)); /* 保持复位状态 */
-        // GPIO_ResetPin(4G_RESET_PIN, GPIO_PIN_SET);       /* 释放RESET引脚 */
-        
+        lte_4g_module_hardware_reset(); // 调用具体的硬件重置函数
         LOG_INFO(LOG_MODULE_NETWORK, "Hardware reset pulse sent, waiting for module restart");
         vTaskDelay(pdMS_TO_TICKS(MODULE_RESET_WAIT_MS));
         reset_success = true;  /* 假设硬件重启操作成功 */
@@ -1451,50 +1515,162 @@ static void data_receive_task(void* pvParameters)
     uint8_t socket_id;
     uint8_t data_buffer[256];
     uint16_t data_length;
+    uint32_t message_count = 0;
+    TickType_t last_activity = xTaskGetTickCount();
     
-    LOG_INFO(LOG_MODULE_NETWORK, "4G data receive task started (queue-based)");
+    /* 数据重组缓冲区 - 用于处理分包接收的AT响应 */
+    static char reassembly_buffer[1024];
+    static uint16_t reassembly_length = 0;
+    static TickType_t last_data_time = 0;
+    const TickType_t reassembly_timeout = pdMS_TO_TICKS(100); /* 100ms重组超时 */
+    
+    LOG_INFO(LOG_MODULE_NETWORK, "4G data receive task started (queue-based, high priority, with reassembly)");
     
     while (1) {
-        /* 从队列接收数据，阻塞等待 */
-        if (xQueueReceive(s_4g_data_queue, &queue_message, portMAX_DELAY) == pdTRUE) {
-            /* 喂狗 - 防止看门狗复位 */
-            MACRO_IWDG_RELOAD();
-            
+        /* 从队列接收数据，使用较短的超时以便定期检查任务状态和重组超时 */
+        if (xQueueReceive(s_4g_data_queue, &queue_message, pdMS_TO_TICKS(50)) == pdTRUE) {
+            message_count++;
+            last_activity = xTaskGetTickCount();
             response_buffer = (char*)queue_message.data;
+            
+            LOG_DEBUG(LOG_MODULE_NETWORK, "Data receive task processing message #%d", message_count);
             
             LOG_DEBUG(LOG_MODULE_NETWORK, "Received %d bytes from queue: %.*s", 
                      queue_message.length, queue_message.length, response_buffer);
             
-            /* 检查是否是Socket数据接收事件 */
-            if (strstr(response_buffer, "+QIURC: \"recv\"")) {
-                /* 解析Socket接收数据 */
-                if (parse_socket_receive_data(response_buffer, &socket_id, data_buffer, &data_length)) {
-                    /* 处理接收到的数据 */
-                    process_socket_data(socket_id, (const char*)data_buffer, data_length);
+            /* 数据重组处理 - 将新数据追加到重组缓冲区 */
+            if (reassembly_length + queue_message.length < sizeof(reassembly_buffer)) {
+                memcpy(reassembly_buffer + reassembly_length, response_buffer, queue_message.length);
+                reassembly_length += queue_message.length;
+                last_data_time = xTaskGetTickCount();
+                
+                LOG_DEBUG(LOG_MODULE_NETWORK, "Appended %d bytes to reassembly buffer (total: %d)", 
+                         queue_message.length, reassembly_length);
+                
+                /* 添加字符串终止符方便字符串操作 */
+                if (reassembly_length < sizeof(reassembly_buffer)) {
+                    reassembly_buffer[reassembly_length] = '\0';
+                }
+            } else {
+                LOG_WARN(LOG_MODULE_NETWORK, "Reassembly buffer overflow, dropping data");
+                reassembly_length = 0; /* 重置缓冲区 */
+                continue;
+            }
+        } else {
+            /* 队列超时，检查是否有未处理的重组数据 */
+            if (reassembly_length > 0 && 
+                (xTaskGetTickCount() - last_data_time) > reassembly_timeout) {
+                LOG_DEBUG(LOG_MODULE_NETWORK, "Reassembly timeout, processing incomplete data (%d bytes)", 
+                         reassembly_length);
+            } else {
+                /* 队列超时且无数据需要处理 */
+                TickType_t current_time = xTaskGetTickCount();
+                if ((current_time - last_activity) > pdMS_TO_TICKS(30000)) {
+                    LOG_DEBUG(LOG_MODULE_NETWORK, "4G data receive task idle for %d seconds", 
+                             (int)((current_time - last_activity) / 1000));
+                    last_activity = current_time;
+                }
+                continue;
+            }
+        }
+        
+        /* 处理重组缓冲区中的数据 */
+        if (reassembly_length > 0) {
+            /* 检查是否包含完整的AT响应（以\r\n结尾） */
+            char* complete_response = NULL;
+            bool has_complete_response = false;
+            
+            /* 查找\r\n标记 */
+            for (int i = 0; i <= (int)reassembly_length - 2; i++) {
+                if (reassembly_buffer[i] == '\r' && reassembly_buffer[i + 1] == '\n') {
+                    /* 找到完整响应 */
+                    complete_response = reassembly_buffer;
+                    has_complete_response = true;
+                    
+                    LOG_DEBUG(LOG_MODULE_NETWORK, "Found complete AT response: %.*s", 
+                             i + 2, complete_response);
+                    break;
                 }
             }
-            /* 检查是否是Socket关闭事件 */
-            else if (strstr(response_buffer, "+QIURC: \"closed\"")) {
-                /* 解析关闭的Socket ID */
-                const char* closed_pos = strstr(response_buffer, "closed\",");
-                if (closed_pos) {
-                    socket_id = (uint8_t)atoi(closed_pos + 8);
-                    handle_socket_close_event(socket_id);
+            
+            /* 如果没有完整响应但等待时间超过超时时间，强制处理 */
+            if (!has_complete_response && 
+                (xTaskGetTickCount() - last_data_time) > reassembly_timeout) {
+                complete_response = reassembly_buffer;
+                has_complete_response = true;
+                LOG_DEBUG(LOG_MODULE_NETWORK, "Force processing incomplete response due to timeout: %.*s", 
+                         reassembly_length, complete_response);
+            }
+            
+            /* 处理完整的响应 */
+            if (has_complete_response && complete_response) {
+                /* 使用重组后的完整数据进行后续处理 */
+                response_buffer = complete_response;
+                
+                /* 清空重组缓冲区，为下次重组做准备 */
+                reassembly_length = 0;
+                
+                LOG_DEBUG(LOG_MODULE_NETWORK, "Processing reassembled response: %s", response_buffer);
+                
+                /* 检查是否是Socket数据接收事件 */
+                if (strstr(response_buffer, "+QIURC: \"recv\"")) {
+                    /* 解析Socket接收数据 */
+                    if (parse_socket_receive_data(response_buffer, &socket_id, data_buffer, &data_length)) {
+                        /* 处理接收到的数据 */
+                        process_socket_data(socket_id, (const char*)data_buffer, data_length);
+                    }
                 }
-            }
-            /* 检查是否是其他4G模块事件 */
-            else if (strstr(response_buffer, "+QIURC:") || 
-                     strstr(response_buffer, "+QIRD:") ||
-                     strstr(response_buffer, "+QISEND:")) {
-                /* 处理其他4G模块相关事件 */
-                LOG_DEBUG(LOG_MODULE_NETWORK, "4G module event: %.*s", 
-                         queue_message.length, response_buffer);
-            }
-            /* 检查是否是纯数据（不包含AT响应格式） */
-            else if (queue_message.length > 0 && response_buffer[0] >= 10 && response_buffer[0] <= 51) {
-                /* 可能是服务器响应数据，尝试处理 */
-                LOG_DEBUG(LOG_MODULE_NETWORK, "Processing potential server response data");
-                Quectel4G_ProcessServerResponse((const uint8_t*)response_buffer, queue_message.length);
+                /* 检查是否是Socket关闭事件 */
+                else if (strstr(response_buffer, "+QIURC: \"closed\"")) {
+                    /* 解析关闭的Socket ID */
+                    const char* closed_pos = strstr(response_buffer, "closed\",");
+                    if (closed_pos) {
+                        socket_id = (uint8_t)atoi(closed_pos + 8);
+                        handle_socket_close_event(socket_id);
+                    }
+                }
+                /* 检查是否是RDY信号 */
+                /* 检查是否是RDY信号 */
+                else if (strstr(response_buffer, "RDY") != NULL) {
+                    /* RDY信号处理 - 模块就绪信号 */
+                    LOG_INFO(LOG_MODULE_NETWORK, "Received reassembled RDY signal from 4G module");
+                    /* 将RDY信号转发给等待的AT处理函数 */
+                    notify_at_response_received(response_buffer, strlen(response_buffer));
+                }
+                /* 检查是否是其他4G模块事件 */
+                else if (strstr(response_buffer, "+QIURC:") || 
+                         strstr(response_buffer, "+QIRD:") ||
+                         strstr(response_buffer, "+QISEND:")) {
+                    /* 处理其他4G模块相关事件 */
+                    LOG_DEBUG(LOG_MODULE_NETWORK, "4G module event: %s", response_buffer);
+                }
+                /* 检查是否是标准AT响应 */
+                else if (strstr(response_buffer, "OK\r\n") || 
+                         strstr(response_buffer, "ERROR\r\n") ||
+                         strstr(response_buffer, "+C") ||  /* 大部分AT响应以+开头 */
+                         strstr(response_buffer, "+Q")) {  /* Quectel特定响应 */
+                    /* AT指令响应，转发给等待的AT处理函数 */
+                    LOG_DEBUG(LOG_MODULE_NETWORK, "AT response: %s", response_buffer);
+                    
+                    /* 这里可以实现一个响应分发机制，将AT响应传递给正在等待的指令 */
+                    notify_at_response_received(response_buffer, strlen(response_buffer));
+                }
+                /* 检查是否是纯数据（不包含AT响应格式） */
+                else if (strlen(response_buffer) > 0 && response_buffer[0] >= 10 && response_buffer[0] <= 51) {
+                    /* 可能是服务器响应数据，尝试处理 */
+                    LOG_DEBUG(LOG_MODULE_NETWORK, "Processing potential server response data");
+                    Quectel4G_ProcessServerResponse((const uint8_t*)response_buffer, strlen(response_buffer));
+                }
+                /* 处理其他未识别数据 */
+                else {
+                    LOG_WARN(LOG_MODULE_NETWORK, "Unrecognized data from 4G module (len=%d): [%s]", 
+                             (int)strlen(response_buffer), response_buffer);
+                    /* 对于未识别的数据，也尝试转发给AT处理，可能是某些特殊响应 */
+                    notify_at_response_received(response_buffer, strlen(response_buffer));
+                }
+            } else {
+                /* 重组缓冲区中无完整响应，继续等待更多数据 */
+                continue;
             }
         }
     }
@@ -1507,12 +1683,13 @@ static void data_receive_task(void* pvParameters)
 static bool start_data_receive_task(void)
 {
     if (s_data_receive_task_handle != NULL) {
-        LOG_WARN(LOG_MODULE_NETWORK, "Data receive task already running");
-        return true;  // 任务已存在
+        LOG_DEBUG(LOG_MODULE_NETWORK, "Data receive task already running, skipping creation");
+        return true;  // 任务已存在，不是错误
     }
     
+    /* 提高数据接收任务优先级，确保能及时处理LTE UART数据 */
     BaseType_t result = xTaskCreate(data_receive_task, "4GDataReceive", 2048, 
-                                   NULL, INIT_TASK_PRIORITY - 1, &s_data_receive_task_handle);
+                                   NULL, INIT_TASK_PRIORITY + 1, &s_data_receive_task_handle);
     
     if (result != pdPASS) {
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create data receive task");
@@ -1520,12 +1697,13 @@ static bool start_data_receive_task(void)
         return false;
     }
     
-    LOG_INFO(LOG_MODULE_NETWORK, "Data receive task started successfully");
+    LOG_INFO(LOG_MODULE_NETWORK, "Data receive task created successfully with high priority");
     return true;
 }
 
 /**
  * @brief 停止数据接收任务
+ * @note 通常只在模块完全关闭时调用，TCP断开时不会停止此任务
  */
 static void stop_data_receive_task(void)
 {
@@ -1535,9 +1713,10 @@ static void stop_data_receive_task(void)
         vTaskDelete(s_data_receive_task_handle);
         s_data_receive_task_handle = NULL;
         
-        /* 清空队列中的剩余数据 */
+        /* 清空队列中的剩余数据，但不删除队列本身 */
         if (s_4g_data_queue != NULL) {
             xQueueReset(s_4g_data_queue);
+            LOG_DEBUG(LOG_MODULE_NETWORK, "Cleared pending messages from 4G data queue");
         }
         
         LOG_INFO(LOG_MODULE_NETWORK, "Data receive task stopped");
@@ -1618,6 +1797,45 @@ static bool parse_socket_receive_data(const char* response, uint8_t* socket_id,
     }
     
     return false;
+}
+
+/**
+ * @brief 通知AT响应接收
+ * @details 将接收到的AT响应保存到缓存中，并通知等待的线程
+ * 
+ * @param response 响应字符串
+ * @param length 响应长度
+ */
+static void notify_at_response_received(const char* response, uint16_t length)
+{
+    if (!response || length == 0 || !s_at_response_mutex || !s_at_response_semaphore) {
+        LOG_ERROR(LOG_MODULE_NETWORK, "Invalid parameters for AT response notification");
+        return;
+    }
+    
+    LOG_DEBUG(LOG_MODULE_NETWORK, "Notifying AT response received (len: %d): [%.*s]", length, length, response);
+    
+    /* 获取互斥量保护缓存访问 */
+    if (xSemaphoreTake(s_at_response_mutex, pdMS_TO_TICKS(100)) == pdTRUE) {
+        /* 复制响应到缓存 */
+        size_t copy_length = (length < sizeof(s_at_response_buffer) - 1) ? 
+                            length : (sizeof(s_at_response_buffer) - 1);
+        memcpy(s_at_response_buffer, response, copy_length);
+        s_at_response_buffer[copy_length] = '\0';
+        
+        /* 设置响应就绪标志 */
+        s_at_response_ready = true;
+        
+        xSemaphoreGive(s_at_response_mutex);
+        
+        /* 通知等待的线程 */
+        xSemaphoreGive(s_at_response_semaphore);
+        
+        LOG_INFO(LOG_MODULE_NETWORK, "AT response cached and notified (len: %d): [%.*s]", 
+                 copy_length, copy_length, response);
+    } else {
+        LOG_ERROR(LOG_MODULE_NETWORK, "Failed to acquire mutex for AT response notification");
+    }
 }
 
 /**
@@ -1796,8 +2014,12 @@ QuectelDataResult_t Quectel4G_Disconnect(void)
     /* 停止设备注册相关任务 */
     device_cleanup_register_tasks();
     
-    /* 停止数据接收任务 */
-    stop_data_receive_task();
+    /* 注意：不停止数据接收任务，因为：
+     * 1. 任务在初始化时创建，需要持续运行以处理AT指令响应
+     * 2. TCP断开不意味着模块关闭，可能还有重连等操作
+     * 3. 任务只在模块完全关闭时统一清理
+     */
+    LOG_DEBUG(LOG_MODULE_NETWORK, "Keeping data receive task active for potential reconnection");
     
     /* 重置设备注册状态 */
     if (xSemaphoreTake(s_register_mutex, pdMS_TO_TICKS(1000)) == pdTRUE) {
@@ -2344,13 +2566,13 @@ QuectelDataResult_t Quectel4G_ConnectTcpServer(const Quectel4G_TcpServerConfig_t
         }
         
         /* 触发连接成功事件 */
-        tcp_handle_connection_event(0, g_quectel4g_info.socket_id, 0);
+        tcp_handle_connection_event(TCP_EVENT_CONNECTED, g_quectel4g_info.socket_id, 0);
         
         LOG_INFO(LOG_MODULE_NETWORK, "TCP connection established successfully");
         return QUECTEL_DATA_OK;
     } else {
         /* 触发连接失败事件 */
-        tcp_handle_connection_event(1, 0, 1);
+        tcp_handle_connection_event(TCP_EVENT_CONNECT_FAILED, 0, 1);
         
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to establish TCP connection after retries");
         return QUECTEL_DATA_ERROR;
@@ -2559,21 +2781,19 @@ static bool tcp_verify_connection(uint8_t socket_id)
  * @param socket_id Socket ID
  * @param error_code 错误代码
  */
-static void tcp_handle_connection_event(uint8_t event_type, uint8_t socket_id, uint8_t error_code)
+static void tcp_handle_connection_event(TcpEventType_t event_type, uint8_t socket_id, uint8_t error_code)
 {
     /* 调用用户回调 */
     if (s_tcp_event_callback) {
         s_tcp_event_callback(event_type, socket_id, error_code, s_tcp_user_data);
     }
     
-    /* 处理连接成功事件，启动数据接收任务和设备注册 */
-    if (event_type == 0 || event_type == 3) {  // 0=首次连接成功, 3=重连成功
-        LOG_INFO(LOG_MODULE_NETWORK, "TCP connection established, starting data receive task and device registration");
+    /* 处理连接成功事件，启动设备注册流程 */
+    if (event_type == TCP_EVENT_CONNECTED || event_type == TCP_EVENT_RECONNECTED) {  // 首次连接成功或重连成功
+        LOG_INFO(LOG_MODULE_NETWORK, "TCP connection established, starting device registration");
         
-        /* 启动数据接收任务 */
-        if (!start_data_receive_task()) {
-            LOG_ERROR(LOG_MODULE_NETWORK, "Failed to start data receive task after TCP connection");
-        }
+        /* 数据接收任务已在初始化时创建，这里无需重复创建 */
+        LOG_DEBUG(LOG_MODULE_NETWORK, "Data receive task already running since initialization");
         
         /* 启动设备注册 */
         // QuectelDataResult_t result = Quectel4G_StartDeviceRegister();
@@ -2581,10 +2801,14 @@ static void tcp_handle_connection_event(uint8_t event_type, uint8_t socket_id, u
         //     LOG_ERROR(LOG_MODULE_NETWORK, "Failed to start device registration: %d", result);
         // }
     }
-    /* 处理连接失败或断开事件，停止数据接收任务 */
-    else if (event_type == 1 || event_type == 2 || event_type == 4) {  // 1=连接失败, 2=连接断开, 4=重连失败
-        LOG_WARN(LOG_MODULE_NETWORK, "TCP connection lost or failed (event=%d), stopping data receive task", event_type);
-        stop_data_receive_task();
+    /* 处理连接失败或断开事件，但不停止数据接收任务（因为可能还有AT指令需要处理） */
+    else if (event_type == TCP_EVENT_CONNECT_FAILED || event_type == TCP_EVENT_DISCONNECTED || event_type == TCP_EVENT_RECONNECT_FAILED) {
+        LOG_WARN(LOG_MODULE_NETWORK, "TCP connection lost or failed (event=%d), but keeping data receive task active", event_type);
+        /* 注意：不停止数据接收任务，因为：
+         * 1. 初始化期间仍需要处理AT指令响应
+         * 2. 重连过程中需要保持数据通道畅通
+         * 3. 任务会在模块完全关闭时统一清理
+         */
     }
 }
 
@@ -2633,15 +2857,15 @@ static void tcp_connection_monitor_task(void* pvParameters)
         if (!connection_ok && g_quectel4g_info.socket_connected) {
             /* 连接已断开，触发断开事件 */
             LOG_WARN(LOG_MODULE_NETWORK, "TCP connection lost, attempting reconnection");
-            tcp_handle_connection_event(2, g_quectel4g_info.socket_id, 0);
+            tcp_handle_connection_event(TCP_EVENT_DISCONNECTED, g_quectel4g_info.socket_id, 0);
             
             /* 尝试重连 */
             if (tcp_connect_with_retry(&s_tcp_config)) {
                 s_tcp_connect_time = xTaskGetTickCount();
-                tcp_handle_connection_event(3, g_quectel4g_info.socket_id, 0);  // 重连成功
+                tcp_handle_connection_event(TCP_EVENT_RECONNECTED, g_quectel4g_info.socket_id, 0);  // 重连成功
                 LOG_INFO(LOG_MODULE_NETWORK, "TCP reconnection successful");
             } else {
-                tcp_handle_connection_event(4, 0, 1);  // 重连失败
+                tcp_handle_connection_event(TCP_EVENT_RECONNECT_FAILED, 0, 1);  // 重连失败
                 LOG_ERROR(LOG_MODULE_NETWORK, "TCP reconnection failed");
             }
         }
@@ -2654,9 +2878,6 @@ static void tcp_connection_monitor_task(void* pvParameters)
                 last_heartbeat_time = current_time;
             }
         }
-        
-        /* 喂狗 - 防止看门狗复位 */
-        MACRO_IWDG_RELOAD();
         
         /* 监控间隔 */
         vTaskDelay(pdMS_TO_TICKS(TCP_MONITOR_INTERVAL_MS));
@@ -3279,9 +3500,6 @@ static void device_register_task(void* pvParameters)
                 break;
         }
         
-        /* 喂狗 - 防止看门狗复位 */
-        MACRO_IWDG_RELOAD();
-        
         /* 任务间隔 */
         vTaskDelay(pdMS_TO_TICKS(1000));
     }
@@ -3323,9 +3541,6 @@ static void realtime_data_task(void* pvParameters)
                 LOG_WARN(LOG_MODULE_NETWORK, "Failed to send realtime data, retrying...");
             }
         }
-        
-        /* 喂狗 - 防止看门狗复位 */
-        MACRO_IWDG_RELOAD();
         
         /* 任务延时 */
         vTaskDelay(pdMS_TO_TICKS(1000));
@@ -3409,4 +3624,74 @@ static bool device_transition_to_next_state(void)
     
     LOG_INFO(LOG_MODULE_NETWORK, "State transition to: %d", s_device_register_data.current_state);
     return true;
+}
+
+/* ==================== 自动TCP连接实现 ==================== */
+
+/**
+ * @brief 默认TCP事件回调函数
+ * @param event_type 事件类型（TCP连接事件枚举值）
+ * @param socket_id Socket ID
+ * @param error_code 错误代码（失败时有效）
+ * @param user_data 用户数据指针
+ */
+static void default_tcp_event_callback(TcpEventType_t event_type, uint8_t socket_id, uint8_t error_code, void* user_data)
+{
+    (void)user_data;  // 未使用
+    
+    switch (event_type) {
+        case TCP_EVENT_CONNECTED:  /* 首次连接成功 */
+            LOG_INFO(LOG_MODULE_NETWORK, "TCP connection established successfully (Socket ID: %d)", socket_id);
+            break;
+        case TCP_EVENT_CONNECT_FAILED:  /* 连接失败 */
+            LOG_ERROR(LOG_MODULE_NETWORK, "TCP connection failed (Error code: %d)", error_code);
+            break;
+        case TCP_EVENT_DISCONNECTED:  /* 连接断开 */
+            LOG_WARN(LOG_MODULE_NETWORK, "TCP connection disconnected (Socket ID: %d)", socket_id);
+            break;
+        case TCP_EVENT_RECONNECTED:  /* 重连成功 */
+            LOG_INFO(LOG_MODULE_NETWORK, "TCP reconnection successful (Socket ID: %d)", socket_id);
+            break;
+        case TCP_EVENT_RECONNECT_FAILED:  /* 重连失败 */
+            LOG_ERROR(LOG_MODULE_NETWORK, "TCP reconnection failed (Error code: %d)", error_code);
+            break;
+        default:
+            LOG_WARN(LOG_MODULE_NETWORK, "Unknown TCP event type: %d", event_type);
+            break;
+    }
+}
+
+/**
+ * @brief 自动连接TCP服务器
+ * @details 在4G模块初始化完成后自动建立TCP连接
+ */
+static void auto_connect_tcp_server(void)
+{
+    LOG_INFO(LOG_MODULE_NETWORK, "Starting automatic TCP server connection...");
+    
+    /* 配置TCP服务器连接参数 */
+    Quectel4G_TcpServerConfig_t tcp_config = {
+        .server_port = DEFAULT_TCP_SERVER_PORT,
+        .local_port = 0,  // 自动分配
+        .connect_timeout_ms = DEFAULT_TCP_CONNECT_TIMEOUT,
+        .retry_count = DEFAULT_TCP_RETRY_COUNT,
+        .retry_interval_ms = DEFAULT_TCP_RETRY_INTERVAL,
+        .auto_reconnect = true,
+        .keepalive_interval_s = 0,    // 禁用TCP保活
+        .heartbeat_interval_s = DEFAULT_TCP_HEARTBEAT_INTERVAL,
+        .heartbeat_data = NULL,
+        .heartbeat_length = 0
+    };
+    
+    /* 设置服务器IP地址 */
+    strncpy(tcp_config.server_ip, DEFAULT_TCP_SERVER_IP, sizeof(tcp_config.server_ip) - 1);
+    tcp_config.server_ip[sizeof(tcp_config.server_ip) - 1] = '\0';
+    
+    /* 建立TCP连接 */
+    QuectelDataResult_t result = Quectel4G_ConnectTcpServer(&tcp_config, default_tcp_event_callback, NULL);
+    if (result != QUECTEL_DATA_OK) {
+        LOG_ERROR(LOG_MODULE_NETWORK, "Failed to connect TCP server automatically: %d", result);
+    } else {
+        LOG_INFO(LOG_MODULE_NETWORK, "TCP server connection initiated successfully");
+    }
 }
