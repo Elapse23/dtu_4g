@@ -30,6 +30,7 @@ JLinkSettings.ini
 .vscode/ipch/
 .vscode/c_cpp_properties.json.bak
 
+si4
 # Keep these VS Code files for team collaboration:
 # .vscode/settings.json
 # .vscode/tasks.json

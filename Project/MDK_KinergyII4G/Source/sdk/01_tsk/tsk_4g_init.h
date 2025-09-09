@@ -5,8 +5,6 @@
  * @author      23Elapse & GitHub Copilot
  * @version     1.0
  * @date        2025-09-03
- * @note        负责移远4G模块的初始化、配置和状态管理
- * =====================================================================================
  */
 
 #ifndef __TSK_4G_INIT_H__
@@ -18,21 +16,43 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-/**
- * @brief 移远4G模块状态枚举
- * @note 定义模块从初始化到正常工作的各个状态阶段
- */
+/* ============================= 配置参数定义 ============================= */
+
+/* 任务参数配置 */
+#define INIT_TASK_STACK_SIZE        (configMINIMAL_STACK_SIZE * 3)  /**< 初始化任务栈大小 */
+#define INIT_TASK_PRIORITY          (tskIDLE_PRIORITY + 4)          /**< 初始化任务优先级 */
+#define AT_COMMAND_TIMEOUT_MS       5000                            /**< AT指令默认超时时间 */
+#define INIT_RETRY_DELAY_MS         2000                            /**< 初始化重试间隔时间 */
+#define STATUS_CHECK_INTERVAL_MS    10000                           /**< 状态检查间隔时间 */
+
+/* 模块重启相关参数 */
+#define MODULE_RESET_PULSE_MS       100     /**< 硬件重启脉冲持续时间（毫秒） */
+#define MODULE_RESET_WAIT_MS        5000    /**< 模块重启后等待时间（毫秒） */
+#define MAX_HARD_RESET_COUNT        3       /**< 最大硬件重启次数 */
+#define SOFT_RESET_TIMEOUT_MS       10000   /**< 软件重启命令超时时间（毫秒） */
+
+/* 队列配置参数 */
+#define QUEUE_LENGTH                10      /**< 队列长度 */
+#define QUEUE_ITEM_SIZE             sizeof(LteToMcu_QueueMessage_t)  /**< 队列项大小 */
+#define LTE_MODULE_DATA_BUFFER_SIZE 512     /**< LTE模块数据缓冲区大小 */
+/* 资源清理位掩码 */
+#define CLEANUP_DATA_QUEUE          (1 << 5)    /**< 清理数据处理队列 */
+#define CLEANUP_DATA_TASK           (1 << 6)    /**< 清理数据接收任务 */
+#define CLEANUP_AT_QUEUE            (1 << 7)    /**< 清理AT响应队列 */
+#define CLEANUP_MUTEXES             (1 << 8)    /**< 清理互斥量和信号量 */
+#define CLEANUP_ALL_RESOURCES       (CLEANUP_DATA_QUEUE | CLEANUP_DATA_TASK | CLEANUP_AT_QUEUE | CLEANUP_MUTEXES)  /**< 清理所有资源 */
+
 typedef enum {
-    QUECTEL_STATE_UNKNOWN = 0,      /**< 未知状态 - 模块刚上电或状态不明确 */
-    QUECTEL_STATE_INITIALIZING,     /**< 初始化中 - 正在执行基础AT指令初始化 */
-    QUECTEL_STATE_READY,            /**< 就绪状态 - 基础初始化完成，可执行AT指令 */
-    QUECTEL_STATE_REGISTERING,      /**< 网络注册中 - 正在搜索并注册网络 */
-    QUECTEL_STATE_REGISTERED,       /**< 已注册网络 - 成功注册到运营商网络 */
-    QUECTEL_STATE_CONNECTING,       /**< 数据连接中 - 正在建立数据连接（PDP上下文激活） */
-    QUECTEL_STATE_CONNECTED,        /**< 已连接数据网络 - 可进行数据通信 */
-    QUECTEL_STATE_ERROR,            /**< 错误状态 - 初始化或操作失败 */
-    QUECTEL_STATE_SLEEP             /**< 休眠状态 - 模块进入低功耗模式 */
-} QuectelState_t;
+    LTE_STATE_UNKNOWN = 0,      /**< 未知状态 - 模块刚上电或状态不明确 */
+    LTE_STATE_INITIALIZING,     /**< 初始化中 - 正在执行基础AT指令初始化 */
+    LTE_STATE_READY,            /**< 就绪状态 - 基础初始化完成，可执行AT指令 */
+    LTE_STATE_REGISTERING,      /**< 网络注册中 - 正在搜索并注册网络 */
+    LTE_STATE_REGISTERED,       /**< 已注册网络 - 成功注册到运营商网络 */
+    LTE_STATE_CONNECTING,       /**< 数据连接中 - 正在建立数据连接（PDP上下文激活） */
+    LTE_STATE_CONNECTED,        /**< 已连接数据网络 - 可进行数据通信 */
+    LTE_STATE_ERROR,            /**< 错误状态 - 初始化或操作失败 */
+    LTE_STATE_SLEEP             /**< 休眠状态 - 模块进入低功耗模式 */
+} LteState_t;
 
 /**
  * @brief AT指令执行结果枚举
@@ -44,62 +64,62 @@ typedef enum {
     AT_RESULT_TIMEOUT,              /**< 超时 - AT指令在指定时间内未收到响应 */
     AT_RESULT_RETRY_EXHAUSTED       /**< 重试次数用尽 - 达到最大重试次数仍未成功 */
 } AT_Result_t;
-
 /**
- * @brief 数据传输协议类型枚举
- * @note 支持的网络通信协议类型
+ * @brief 支持的模块类型枚举
+ * @note 定义系统支持的所有通信模块类型
  */
 typedef enum {
-    QUECTEL_PROTOCOL_TCP = 0,       /**< TCP协议 - 面向连接的可靠传输 */
-    QUECTEL_PROTOCOL_UDP = 1,       /**< UDP协议 - 无连接的快速传输 */
-    QUECTEL_PROTOCOL_HTTP = 2       /**< HTTP协议 - 应用层协议 */
-} QuectelProtocol_t;
+    MODULE_TYPE_MCU = 0,        /**< MCU模块 (本地处理) */
+    MODULE_TYPE_4G,         /**< 4G模块 (Lte) */
+    MODULE_TYPE_BLE,            /**< BLE模块 (ESP) */
+    MODULE_TYPE_WIFI,           /**< WiFi模块 (ESP) */
+    MODULE_TYPE_RS485,          /**< RS485串口模块 */
+    MODULE_TYPE_COUNT,          /**< 模块类型计数 */
+    MODULE_TYPE_UNKNOWN = 0xFF  /**< 未知模块类型 */
+} ModuleType_t;
 
 /**
- * @brief 数据传输结果枚举
- * @note 数据发送和接收操作的结果状态
+ * @brief 模块指令类型枚举  
+ * @note 定义模块支持的指令类型
  */
 typedef enum {
-    QUECTEL_DATA_OK = 0,            /**< 数据操作成功 */
-    QUECTEL_DATA_ERROR,             /**< 数据操作失败 */
-    QUECTEL_DATA_TIMEOUT,           /**< 数据操作超时 */
-    QUECTEL_DATA_BUFFER_FULL,       /**< 缓冲区已满 */
-    QUECTEL_DATA_NO_CONNECTION,     /**< 无网络连接 */
-    QUECTEL_DATA_INVALID_PARAM      /**< 参数无效 */
-} QuectelDataResult_t;
+    COMMAND_TYPE_AT = 0,        /**< AT指令 */
+    COMMAND_TYPE_DATA,          /**< 数据传输 */
+    COMMAND_TYPE_CONFIG,        /**< 配置指令 */
+    COMMAND_TYPE_CONTROL,       /**< 控制指令 */
+    COMMAND_TYPE_QUERY,         /**< 查询指令 */
+    COMMAND_TYPE_COUNT          /**< 指令类型计数 */
+} CommandType_t;
 
 /**
- * @brief 数据接收回调函数类型
- * @param data 接收到的数据指针
- * @param length 数据长度
- * @param remote_ip 远端IP地址（UDP协议有效）
- * @param remote_port 远端端口号（UDP协议有效）
+ * @brief LTE统一消息头
  */
-typedef void (*QuectelDataReceiveCallback_t)(const uint8_t* data, uint16_t length, 
-                                            const char* remote_ip, uint16_t remote_port);
-
-/**
- * @brief 数据连接状态回调函数类型
- * @param connected 连接状态：true-已连接，false-已断开
- * @param error_code 错误代码（断开时有效）
- */
-typedef void (*QuectelConnectionCallback_t)(bool connected, uint8_t error_code);
-
+typedef struct {
+    ModuleType_t module_type;                   /**< 消息类型 */
+    CommandType_t cmd_type;                     /**< 命令类型 */
+    uint8_t target_module;                      /**< 目标模块类型 */
+    uint16_t sequence_id;                       /**< 消息序列号 */
+    uint16_t data_length;                       /**< 数据负载长度 */
+    uint32_t timestamp;                         /**< 时间戳 */
+    uint8_t priority;                           /**< 消息优先级 (0-7) */
+    uint8_t flags;                              /**< 消息标志位 */
+} __attribute__((packed)) LTE_Message_Header_t;
 /**
  * @brief 4G数据队列消息结构体
  * @note 用于在通信接收任务和4G数据处理任务之间传递数据
  */
 typedef struct {
-    uint8_t data[512];              /**< 数据内容 - 接收到的原始数据 */
-    uint16_t length;                /**< 数据长度 - 有效数据字节数 */
-    uint32_t timestamp;             /**< 时间戳 - 数据接收时间（系统滴答） */
-} Quectel4G_QueueMessage_t;
+    LTE_Message_Header_t header;    /**< 消息头 - 包含类型、长度、时间戳等信息 */
+    uint8_t data[LTE_MODULE_DATA_BUFFER_SIZE  - sizeof(LTE_Message_Header_t)];              /**< 数据内容 - 接收到的原始数据 */
+    uint16_t checksum;               /**< 校验和 - 用于数据完整性校验 */
+} __attribute__((packed)) LteToMcu_QueueMessage_t;
 
 /**
  * @brief AT指令配置结构体
  * @note 统一管理AT指令的执行参数、重试策略和回调处理
  */
 typedef struct {
+    ModuleType_t module_type;       /**< 模块类型 - 指定目标模块（4G/WiFi/BT等） */
     const char* at_cmd;             /**< AT指令字符串 - 要发送的完整AT指令（不含\r\n） */
     const char* expected_resp;      /**< 期望的响应字符串 - 用于判断指令是否执行成功 */
     uint32_t timeout_ms;            /**< 超时时间（毫秒） - 等待响应的最大时间 */
@@ -114,7 +134,7 @@ typedef struct {
 /**
  * @brief 移远4G设备信息结构体
  * @note 统一管理4G模块的所有状态信息，包括设备信息、网络状态、连接配置等
- * @details 这是系统的核心数据结构，通过全局变量g_quectel4g_info实例化
+ * @details 这是系统的核心数据结构，通过全局变量g_Lte_info实例化
  */
 typedef struct {
     /* 设备基本信息 */
@@ -145,15 +165,7 @@ typedef struct {
     uint8_t gprs_reg_status;        /**< GPRS注册状态 - 数据服务注册状态 */
     bool data_call_active;          /**< 数据连接是否激活 - PDP上下文是否已激活 */
     bool roaming_status;            /**< 是否处于漫游状态 - true表示在非归属网络 */
-    
-    /* 数据传输状态信息 */
-    uint8_t socket_id;              /**< Socket连接ID - 当前活动的Socket标识(0-11) */
-    bool socket_connected;          /**< Socket连接状态 - 是否已建立Socket连接 */
-    QuectelProtocol_t protocol_type;/**< 当前使用的协议类型 - TCP/UDP/HTTP */
-    uint32_t bytes_sent;            /**< 累计发送字节数 - 统计已发送的数据量 */
-    uint32_t bytes_received;        /**< 累计接收字节数 - 统计已接收的数据量 */
-    uint32_t last_data_time;        /**< 最后数据传输时间 - 记录最近一次数据收发的时间戳 */
-} Quectel4G_Device_Info_t;
+} Lte_Device_Info_t;
 
 /**
  * @brief 初始化配置结构
@@ -169,63 +181,59 @@ typedef struct {
     char username[32];              /**< 用户名 - APN认证用户名,大多数情况下为空 */
     char password[32];              /**< 密码 - APN认证密码,大多数情况下为空 */
     
-    /* 数据传输配置 */
-    QuectelDataReceiveCallback_t rx_callback;  /**< 数据接收回调函数 */
-    QuectelConnectionCallback_t conn_callback; /**< 连接状态回调函数 */
-    uint16_t rx_buffer_size;        /**< 接收缓冲区大小 - 默认1024字节 */
-    uint32_t keepalive_interval;    /**< 心跳间隔时间(秒) - TCP连接保活间隔 */
-} QuectelInitConfig_t;
+} LteInitConfig_t;
 
 /* 公共函数声明 */
-
+/**
+ * @brief 向4G数据处理队列发送数据
+ * @param data 数据指针
+ * @param length 数据长度
+ * @return bool 发送是否成功
+ */
+bool LTE_SendDataToMCU(ModuleType_t module_type, const uint8_t* data, uint32_t length);
 /**
  * @brief 初始化4G模块初始化任务
  * @param config 初始化配置指针，NULL使用默认配置
  * @return BaseType_t 初始化结果
  */
-BaseType_t Quectel4G_Init(const QuectelInitConfig_t* config);
+BaseType_t Lte_init(const LteInitConfig_t* config);
+
+/**
+ * @brief 执行AT指令配置
+ * @param cmd_config AT指令配置
+ * @return AT_Result_t 执行结果
+ */
+AT_Result_t execute_at_command_with_config(const AT_Cmd_Config_t* cmd_config);
 
 /**
  * @brief 获取4G模块当前状态
- * @return QuectelState_t 当前状态
+ * @return LteState_t 当前状态
  */
-QuectelState_t Quectel4G_GetState(void);
+LteState_t Lte_GetState(void);
 
 /**
  * @brief 强制重新初始化4G模块
  * @return BaseType_t 操作结果
  */
-BaseType_t Quectel4G_Reinitialize(void);
+BaseType_t Lte_Reinitialize(void);
 
 /**
  * @brief 硬件重启4G模块
  * @return BaseType_t 操作结果
  */
-BaseType_t Quectel4G_HardReset(void);
+BaseType_t Lte_HardReset(void);
 
 /**
  * @brief 软件重启4G模块
  * @return BaseType_t 操作结果
  */
-BaseType_t Quectel4G_SoftReset(void);
-
-/**
- * @brief 设置4G模块为休眠模式
- * @return BaseType_t 操作结果
- */
-BaseType_t Quectel4G_Sleep(void);
-
-/**
- * @brief 唤醒4G模块
- * @return BaseType_t 操作结果
- */
-BaseType_t Quectel4G_Wakeup(void);
+BaseType_t Lte_SoftReset(void);
 
 /**
  * @brief 检查4G模块是否就绪
  * @return bool 是否就绪
  */
-bool Quectel4G_IsReady(void);
+bool Lte_IsReady(void);
 
 /**
  * @brief 获取信号强度
@@ -233,21 +241,42 @@ bool Quectel4G_IsReady(void);
  * @param ber 误码率输出
  * @return bool 获取是否成功
  */
-bool Quectel4G_GetSignalStrength(int8_t* rssi, uint8_t* ber);
+bool Lte_GetSignalStrength(int8_t* rssi, uint8_t* ber);
 
 /**
  * @brief 等待4G模块初始化完成
  * @param timeout_ms 等待超时时间
  * @return bool 是否在超时前完成初始化
  */
-bool Quectel4G_WaitForReady(uint32_t timeout_ms);
+bool Lte_WaitForReady(uint32_t timeout_ms);
+
+/* ============================= 互斥访问接口 ============================= */
+
+/**
+ * @brief 获取LTE串口访问互斥量 - 供其他任务使用
+ * @details 确保多个任务对LTE串口访问的同步，防止数据竞争
+ * 
+ * @param timeout_ms 获取超时时间（毫秒）
+ * @return bool 是否成功获取互斥量
+ * 
+ * @note 获取成功后必须调用 ReleaseLteAccessMutex() 释放
+ */
+bool AcquireLteAccessMutex(uint32_t timeout_ms);
+
+/**
+ * @brief 释放LTE串口访问互斥量
+ * @details 释放之前通过 AcquireLteAccessMutex() 获取的互斥量
+ * 
+ * @note 只能在成功获取互斥量的任务中调用
+ */
+void ReleaseLteAccessMutex(void);
 
 /**
  * @brief 执行单个AT指令
  * @param cmd_config AT指令配置
  * @return AT_Result_t 执行结果
  */
-AT_Result_t Quectel4G_ExecuteAtCommand(const AT_Cmd_Config_t* cmd_config);
+AT_Result_t Lte_ExecuteAtCommand(const AT_Cmd_Config_t* cmd_config);
 
 /**
  * @brief 执行AT指令序列
@@ -255,153 +284,39 @@ AT_Result_t Quectel4G_ExecuteAtCommand(const AT_Cmd_Config_t* cmd_config);
  * @param count 指令数量
  * @return bool 是否全部执行成功
  */
-bool Quectel4G_ExecuteAtSequence(const AT_Cmd_Config_t* cmd_sequence, uint8_t count);
+bool Lte_ExecuteAtSequence(const AT_Cmd_Config_t* cmd_sequence, uint8_t count);
 
 /**
  * @brief 获取默认初始化配置
- * @return QuectelInitConfig_t 默认配置
+ * @return 默认配置
  */
-QuectelInitConfig_t Quectel4G_GetDefaultConfig(void);
+LteInitConfig_t Lte_GetDefaultConfig(void);
+
+/**
+ * @brief 向4G数据处理队列发送数据
+ * @param data 数据指针
+ * @param length 数据长度
+ * @return bool 发送是否成功
+ * @note 统一接口：将接收到的4G模块数据推送到内部处理队列
+ */
+bool Lte_SendDataToQueue(const uint8_t* data, uint32_t length);
 
 /* 声明全局唯一的4G设备信息实例 */
-extern Quectel4G_Device_Info_t g_quectel4g_info;
+extern Lte_Device_Info_t g_Lte_info;
 
 /**
  * @brief 获取4G设备信息
  * @param info 设备信息结构指针
  * @return bool 获取是否成功
  */
-bool Quectel4G_GetDeviceInfo(Quectel4G_Device_Info_t* info);
+bool Lte_GetDeviceInfo(Lte_Device_Info_t* info);
 
 /**
  * @brief 更新4G设备信息
  * @param info 设备信息结构指针
  * @return bool 更新是否成功
  */
-bool Quectel4G_UpdateDeviceInfo(const Quectel4G_Device_Info_t* info);
-
-/* ========================== 数据传输相关函数 ========================== */
-
-/**
- * @brief 建立TCP连接
- * @param remote_ip 远程服务器IP地址
- * @param remote_port 远程服务器端口
- * @param local_port 本地端口（0表示自动分配）
- * @return QuectelDataResult_t 连接结果
- */
-QuectelDataResult_t Quectel4G_ConnectTCP(const char* remote_ip, uint16_t remote_port, uint16_t local_port);
-
-/**
- * @brief 建立UDP连接
- * @param remote_ip 远程服务器IP地址
- * @param remote_port 远程服务器端口
- * @param local_port 本地端口（0表示自动分配）
- * @return QuectelDataResult_t 连接结果
- */
-QuectelDataResult_t Quectel4G_ConnectUDP(const char* remote_ip, uint16_t remote_port, uint16_t local_port);
-
-/**
- * @brief 断开网络连接
- * @return QuectelDataResult_t 断开结果
- */
-QuectelDataResult_t Quectel4G_Disconnect(void);
-
-/**
- * @brief 发送数据（TCP/UDP通用）
- * @param data 要发送的数据指针
- * @param length 数据长度
- * @param timeout_ms 发送超时时间（毫秒）
- * @return QuectelDataResult_t 发送结果
- */
-QuectelDataResult_t Quectel4G_SendData(const uint8_t* data, uint16_t length, uint32_t timeout_ms);
-
-/**
- * @brief 发送字符串数据
- * @param str 要发送的字符串
- * @param timeout_ms 发送超时时间（毫秒）
- * @return QuectelDataResult_t 发送结果
- */
-QuectelDataResult_t Quectel4G_SendString(const char* str, uint32_t timeout_ms);
-
-/**
- * @brief 发送UDP数据到指定地址
- * @param data 要发送的数据指针
- * @param length 数据长度
- * @param remote_ip 目标IP地址
- * @param remote_port 目标端口
- * @param timeout_ms 发送超时时间（毫秒）
- * @return QuectelDataResult_t 发送结果
- */
-QuectelDataResult_t Quectel4G_SendUDPData(const uint8_t* data, uint16_t length, 
-                                          const char* remote_ip, uint16_t remote_port, 
-                                          uint32_t timeout_ms);
-
-/**
- * @brief 获取接收缓冲区数据
- * @param buffer 接收缓冲区指针
- * @param buffer_size 缓冲区大小
- * @param received_length 实际接收长度指针
- * @param timeout_ms 接收超时时间（毫秒）
- * @return QuectelDataResult_t 接收结果
- */
-QuectelDataResult_t Quectel4G_ReceiveData(uint8_t* buffer, uint16_t buffer_size, 
-                                          uint16_t* received_length, uint32_t timeout_ms);
-
-/**
- * @brief 检查是否有数据可读
- * @return bool true-有数据可读，false-无数据
- */
-bool Quectel4G_IsDataAvailable(void);
-
-/**
- * @brief 获取连接状态
- * @return bool true-已连接，false-未连接
- */
-bool Quectel4G_IsConnected(void);
-
-/**
- * @brief 设置数据接收回调函数
- * @param callback 回调函数指针
- */
-void Quectel4G_SetReceiveCallback(QuectelDataReceiveCallback_t callback);
-
-/**
- * @brief 设置连接状态回调函数
- * @param callback 回调函数指针
- */
-void Quectel4G_SetConnectionCallback(QuectelConnectionCallback_t callback);
-
-/**
- * @brief 获取网络统计信息
- * @param bytes_sent 发送字节数指针
- * @param bytes_received 接收字节数指针
- * @param last_data_time 最后数据时间指针
- * @return bool 获取是否成功
- */
-bool Quectel4G_GetNetworkStats(uint32_t* bytes_sent, uint32_t* bytes_received, uint32_t* last_data_time);
-
-/**
- * @brief 重置网络统计信息
- * @details 将发送和接收的字节计数器重置为0
- * @return bool 重置是否成功
- */
-bool Quectel4G_ResetNetworkStats(void);
-
-/**
- * @brief 向4G数据处理队列发送数据
- * @details 供通信接收任务调用，将LTE串口数据发送到4G数据处理队列
- * @param data 数据指针
- * @param length 数据长度
- * @return bool 发送是否成功
- */
-bool Quectel4G_SendDataToQueue(const uint8_t* data, uint16_t length);
-
-/**
- * @brief 获取4G数据处理队列句柄
- * @details 供其他模块获取队列句柄进行数据发送
- * @return QueueHandle_t 队列句柄，NULL表示未初始化
- */
-QueueHandle_t Quectel4G_GetDataQueue(void);
+bool Lte_UpdateDeviceInfo(const Lte_Device_Info_t* info);
 
 /* ==================== TCP连接服务器完整流程接口 ==================== */
 
@@ -421,7 +336,7 @@ typedef struct {
     uint32_t heartbeat_interval_s;  /**< 应用层心跳间隔（秒，0表示禁用） */
     const char* heartbeat_data;     /**< 心跳数据内容（可选） */
     uint16_t heartbeat_length;      /**< 心跳数据长度 */
-} Quectel4G_TcpServerConfig_t;
+} Lte_TcpServerConfig_t;
 
 /**
  * @brief TCP连接事件类型枚举
@@ -442,7 +357,7 @@ typedef enum {
  * @param error_code 错误代码（失败时有效）
  * @param user_data 用户数据指针
  */
-typedef void (*Quectel4G_TcpEventCallback_t)(TcpEventType_t event_type, uint8_t socket_id, 
+typedef void (*Lte_TcpEventCallback_t)(TcpEventType_t event_type, uint8_t socket_id, 
                                             uint8_t error_code, void* user_data);
 
 /* ==================== 设备注册和数据交互协议 ==================== */
@@ -531,147 +446,6 @@ typedef struct {
 typedef void (*DeviceRegisterCallback_t)(DeviceRegisterState_t state, bool success, 
                                         uint8_t command, uint8_t response, void* user_data);
 
-/**
- * @brief 连接TCP服务器（完整流程）
- * @details 提供完整的TCP服务器连接流程，包括：
- *          - 网络状态检查
- *          - Socket连接建立
- *          - 连接状态验证
- *          - 重试机制
- *          - 自动重连配置
- *          - 心跳保活机制
- * 
- * @param config TCP服务器连接配置
- * @param event_callback 连接事件回调函数（可选）
- * @param user_data 用户数据指针（传递给回调函数）
- * @return QuectelDataResult_t 连接结果
- * 
- * @note 此函数会阻塞执行直到连接成功或失败
- * @note 如果启用自动重连，连接断开后会自动尝试重连
- */
-QuectelDataResult_t Quectel4G_ConnectTcpServer(const Quectel4G_TcpServerConfig_t* config,
-                                              Quectel4G_TcpEventCallback_t event_callback,
-                                              void* user_data);
 
-/**
- * @brief 检查TCP服务器连接状态
- * @details 主动查询当前TCP连接状态，验证连接的可用性
- * @return bool true=连接正常，false=连接异常或已断开
- */
-bool Quectel4G_CheckTcpConnection(void);
-
-/**
- * @brief 设置TCP自动重连参数
- * @details 配置TCP连接断开后的自动重连行为
- * @param enable 是否启用自动重连
- * @param retry_count 最大重试次数（0表示无限重试）
- * @param retry_interval_ms 重试间隔时间（毫秒）
- * @return bool 设置是否成功
- */
-bool Quectel4G_SetTcpAutoReconnect(bool enable, uint8_t retry_count, uint32_t retry_interval_ms);
-
-/**
- * @brief 发送TCP心跳数据
- * @details 发送应用层心跳数据以保持连接活跃
- * @param data 心跳数据（可选，NULL表示使用默认心跳）
- * @param length 数据长度
- * @return QuectelDataResult_t 发送结果
- */
-QuectelDataResult_t Quectel4G_SendTcpHeartbeat(const uint8_t* data, uint16_t length);
-
-/**
- * @brief 获取TCP连接详细信息
- * @details 获取当前TCP连接的详细状态信息
- * @param socket_id Socket ID指针
- * @param remote_ip 远程IP地址缓冲区（至少16字节）
- * @param remote_port 远程端口号指针
- * @param local_port 本地端口号指针
- * @param connect_time 连接建立时间指针（系统滴答）
- * @return bool 获取是否成功
- */
-bool Quectel4G_GetTcpConnectionInfo(uint8_t* socket_id, char* remote_ip, 
-                                  uint16_t* remote_port, uint16_t* local_port,
-                                  uint32_t* connect_time);
-
-/* ==================== 设备注册和数据交互API ==================== */
-
-/**
- * @brief 初始化设备注册流程
- * @details 配置设备注册所需的数据和参数，准备向服务器注册
- * @param register_data 设备注册数据配置
- * @param callback 注册状态回调函数（可选）
- * @param user_data 用户数据指针
- * @return bool 初始化是否成功
- */
-bool Quectel4G_InitDeviceRegister(const DeviceRegisterData_t* register_data,
-                                 DeviceRegisterCallback_t callback,
-                                 void* user_data);
-
-/**
- * @brief 开始设备注册流程
- * @details 连接服务器成功后调用此函数开始设备注册流程
- * @return QuectelDataResult_t 启动结果
- * 
- * @note 此函数需要在TCP连接成功后调用
- * @note 注册过程是异步的，通过回调函数通知状态变化
- */
-QuectelDataResult_t Quectel4G_StartDeviceRegister(void);
-
-/**
- * @brief 处理服务器响应数据
- * @details 解析服务器响应，推进注册状态机
- * @param data 响应数据
- * @param length 数据长度
- * @return bool 处理是否成功
- */
-bool Quectel4G_ProcessServerResponse(const uint8_t* data, uint16_t length);
-
-/**
- * @brief 手动发送实时数据
- * @details 主动发送一次实时数据到服务器
- * @return QuectelDataResult_t 发送结果
- */
-QuectelDataResult_t Quectel4G_SendRealtimeData(void);
-
-/**
- * @brief 获取设备注册状态
- * @details 获取当前设备注册流程的状态
- * @return DeviceRegisterState_t 当前注册状态
- */
-DeviceRegisterState_t Quectel4G_GetRegisterState(void);
-
-/**
- * @brief 检查设备是否已完成注册
- * @details 检查设备是否已完成所有注册步骤
- * @return bool true=已注册，false=未注册
- */
-bool Quectel4G_IsDeviceRegistered(void);
-
-/**
- * @brief 重置设备注册状态
- * @details 重置注册状态，可用于重新注册或错误恢复
- * @return bool 重置是否成功
- */
-bool Quectel4G_ResetRegisterState(void);
-
-/**
- * @brief 设置实时数据发送间隔
- * @details 动态调整实时数据的发送间隔
- * @param interval_ms 发送间隔（毫秒）
- * @return bool 设置是否成功
- */
-bool Quectel4G_SetRealtimeDataInterval(uint32_t interval_ms);
-
-/**
- * @brief 获取注册统计信息
- * @details 获取设备注册过程的统计信息
- * @param total_commands 总指令数指针
- * @param successful_commands 成功指令数指针
- * @param failed_commands 失败指令数指针
- * @param registration_time 注册耗时指针（毫秒）
- * @return bool 获取是否成功
- */
-bool Quectel4G_GetRegisterStats(uint8_t* total_commands, uint8_t* successful_commands,
-                               uint8_t* failed_commands, uint32_t* registration_time);
 
 #endif /* __TSK_4G_INIT_H__ */

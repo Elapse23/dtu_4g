@@ -112,7 +112,7 @@ int main(void)
     hardware_init();
 
     /* Initialize 4G module initialization task */
-    if (Quectel4G_Init(NULL) != pdPASS) {  // 使用默认配置
+    if (Lte_init(NULL) != pdPASS) {  // 使用默认配置
         SYS_LOG_ERROR("Failed to initialize 4G module task");
     }
 

@@ -1,11 +1,11 @@
 /**
  * =====================================================================================
  * @file        tsk_commu_send.h
- * @brief       通信发送任务头文件
+ * @brief       统一通信发送任务头文件
  * @author      23Elapse & GitHub Copilot
- * @version     1.0
- * @date        2025-09-03
- * @note        4G AT命令发送和RS485数据发送任务接口
+ * @version     2.0
+ * @date        2025-09-08
+ * @note        统一的模块通信发送接口 - 支持4G/BLE/RS485等多种模块通信
  * =====================================================================================
  */
 
@@ -13,21 +13,68 @@
 #define __TSK_COMMU_SEND_H
 
 #include "FreeRTOS.h"
-#include "tsk_4g_init.h"  // 包含 AT_Cmd_Config_t 定义
-#include "bsp_uart_ring_buffer.h"  // 包含 UART_ID_t 定义
+#include "tsk_4g_init.h"  
+#include "bsp_uart_ring_buffer.h"
 #include <stdint.h>
 #include <stdbool.h>
 
-/* 4G模块状态枚举 */
-typedef enum {
-    MODEM_STATE_IDLE = 0,       // 空闲状态
-    MODEM_STATE_CONNECTING,     // 连接中
-    MODEM_STATE_CONNECTED,      // 已连接
-    MODEM_STATE_SENDING,        // 发送中
-    MODEM_STATE_ERROR           // 错误状态
-} ModemState_t;
+/* 任务参数 */
+#define SEND_TASK_STACK_SIZE        (configMINIMAL_STACK_SIZE * 4)  // 增加栈大小
+#define SEND_TASK_PRIORITY          (tskIDLE_PRIORITY + 3)
+#define SEND_QUEUE_LENGTH           20
+#define SEND_TIMEOUT_MS             1000
+#define AT_RESPONSE_TIMEOUT_MS      5000
 
-/* 公共函数声明 */
+/* 共享串口参数 */
+#define SHARED_UART_ID              UART_ID_LTE     /**< BLE和4G共享的串口ID */
+#define MODULE_SWITCH_DELAY_MS      100             /**< 模块切换延时 */
+#define MODULE_INIT_DELAY_MS        500             /**< 模块初始化延时 */
+
+/* 发送消息类型 */
+typedef enum {
+    SEND_TYPE_4G_AT = 0,        // 4G AT命令
+    SEND_TYPE_BLE_AT,           // BLE AT命令
+    SEND_TYPE_RS485_DATA,       // RS485数据
+    SEND_TYPE_HEARTBEAT,        // 心跳数据
+    SEND_TYPE_SHARED_AT,        // 共享AT命令（自动识别模块）
+    SEND_TYPE_QUERY             // 查询命令
+} SendMessageType_t;
+
+/* 发送消息结构 */
+typedef struct {
+    SendMessageType_t type;         // 消息类型
+    UART_ID_t target_uart;          // 目标串口
+    uint8_t data[256];              // 发送数据
+    uint16_t length;                // 数据长度
+    uint32_t timeout_ms;            // 超时时间
+    bool wait_response;             // 是否等待响应
+    char expected_response[64];     // 期望的响应
+    uint32_t sequence_id;           // 序列号（新增）
+    void (*callback)(const char* response, AT_Result_t result);  // 回调函数（新增）
+} LteSendMessage_t;
+
+/* RS485发送消息类型 */
+typedef enum {
+    RS485_TX_TYPE_DATA = 0,         // 接收到数据
+    RS485_TX_TYPE_COMMAND,          // 接收到命令
+    RS485_TX_TYPE_RESPONSE,         // 接收到响应
+    RS485_TX_TYPE_ERROR,            // 接收到错误消息
+    RS485_TX_TYPE_TIMEOUT           // 接收超时
+} Rs485SendMessageType_t;
+
+/* RS485发送消息结构 */
+typedef struct {
+    Rs485SendMessageType_t type;      // 消息类型
+    UART_ID_t source_uart;          // 源串口ID
+    uint8_t data[256];              // 接收数据
+    uint16_t length;                // 数据长度
+    uint32_t timestamp;             // 时间戳
+    uint8_t device_addr;            // 设备地址
+    uint8_t function_code;          // 功能码
+    uint16_t crc;                   // CRC校验码
+    bool crc_valid;                 // CRC校验是否有效
+    uint32_t sequence_id;           // 序列号
+} Rs485SendMessage_t;
 
 /**
  * @brief 通信发送任务主函数
@@ -44,47 +91,63 @@ void vCommuSendTask(void* pvParameters);
 BaseType_t CommuSend_Init(void);
 
 /**
- * @brief 发送4G AT命令
- * @param cmd_config AT命令配置结构体
- * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
- * @note 命令会被加入发送队列异步处理
- */
-BaseType_t CommuSend_4gAtCommand(const AT_Cmd_Config_t* cmd_config);
-
-/**
  * @brief 统一的UART数据发送接口
- * @param uart_id 串口ID (UART_ID_LOG, UART_ID_RS485)
+ * @param uart_id 串口ID
  * @param data 要发送的数据
  * @param length 数据长度
  * @param timeout_ms 超时时间（毫秒）
  * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
- * @note LTE串口请使用 CommuSend_4gAtCommand，支持LOG→LTE转发
  */
 BaseType_t CommuSend_UartData(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms);
+
+/**
+ * @brief 发送LTE AT命令
+ * @param at_cmd AT命令配置结构
+ * @return BaseType_t 发送结果
+ */
+BaseType_t CommuSend_LTECommand(const AT_Cmd_Config_t* at_cmd);
+
+
 
 /**
  * @brief 发送RS485数据
  * @param data 数据指针
  * @param length 数据长度
- * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
- * @note 数据会被加入发送队列异步处理
+ * @return BaseType_t 发送结果
  */
 BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length);
 
-/**
- * @brief 获取4G模块当前状态
- * @return ModemState_t 4G模块状态
- */
-ModemState_t CommuSend_GetModemState(void);
+
+
+
+/* ============================= 便捷宏定义 ============================= */
 
 /**
- * @brief 发送HTTP请求
- * @param url 请求URL
- * @param data 请求数据（NULL为GET请求，非NULL为POST请求）
- * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
- * @note 支持HTTP GET和POST请求
+ * @brief 4G AT指令发送宏 
+ * @param cmd_str AT指令字符串
+ * @param expected_resp 期望响应
+ * @param timeout 超时时间
  */
-BaseType_t CommuSend_HttpRequest(const char* url, const char* data);
+#define SEND_4G_AT_COMMAND(cmd_str, expected_resp, timeout) \
+    CommuSend_ModuleCommand(MODULE_TYPE_4G, COMMAND_TYPE_AT, \
+                           cmd_str, strlen(cmd_str), timeout, NULL, NULL)
+
+/**
+ * @brief BLE指令发送宏
+ * @param cmd_str BLE指令字符串  
+ * @param timeout 超时时间
+ */
+#define SEND_BLE_COMMAND(cmd_str, timeout) \
+    CommuSend_ModuleCommand(MODULE_TYPE_BLE, COMMAND_TYPE_AT, \
+                           cmd_str, strlen(cmd_str), timeout, NULL, NULL)
+
+/**
+ * @brief RS485数据发送宏
+ * @param data_ptr 数据指针
+ * @param data_len 数据长度
+ */
+#define SEND_RS485_DATA(data_ptr, data_len) \
+    CommuSend_ModuleData(MODULE_TYPE_RS485, data_ptr, data_len, 1000)
 
 /* 便捷宏定义 */
 
@@ -95,7 +158,7 @@ BaseType_t CommuSend_HttpRequest(const char* url, const char* data);
 #define SEND_4G_CMD(cmd) \
     do { \
         AT_Cmd_Config_t at_cfg = {cmd, NULL, 1000, 0, NULL, false, NULL}; \
-        CommuSend_4gAtCommand(&at_cfg); \
+        CommuSend_LTECommand(&at_cfg); \
     } while(0)
 
 /**
@@ -105,7 +168,7 @@ BaseType_t CommuSend_HttpRequest(const char* url, const char* data);
 #define SEND_4G_CMD_OK(cmd) \
     do { \
         AT_Cmd_Config_t at_cfg = {cmd, "OK", 3000, 0, NULL, false, NULL}; \
-        CommuSend_4gAtCommand(&at_cfg); \
+        CommuSend_LTECommand(&at_cfg); \
     } while(0)
 
 /**
@@ -121,41 +184,7 @@ BaseType_t CommuSend_HttpRequest(const char* url, const char* data);
  */
 #define SEND_LOG_DATA(data, len)    CommuSend_UartData(UART_ID_LOG, data, len, 1000)
 
-/* 常用移远4G AT命令宏 */
-#define QUECTEL_CMD_TEST            "AT"
-#define QUECTEL_CMD_RESET           "AT+CFUN=1,1"
-#define QUECTEL_CMD_VERSION         "ATI"
-#define QUECTEL_CMD_IMEI            "AT+GSN"
-#define QUECTEL_CMD_ICCID           "AT+QCCID"
-#define QUECTEL_CMD_SIGNAL          "AT+CSQ"
-#define QUECTEL_CMD_NETWORK_REG     "AT+CREG?"
-#define QUECTEL_CMD_GPRS_REG        "AT+CGREG?"
-#define QUECTEL_CMD_HTTP_CFG        "AT+QHTTPCFG=\"contextid\",1"
-#define QUECTEL_CMD_ACTIVATE_PDP    "AT+QIACT=1"
-#define QUECTEL_CMD_DEACT_PDP       "AT+QIDEACT=1"
 
-/* 便捷的AT命令发送函数 */
 
-/**
- * @brief 发送简单AT命令（不等待响应）
- * @param at_cmd AT命令字符串
- * @param timeout_ms 超时时间（毫秒）
- * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
- */
-static inline BaseType_t CommuSend_SimpleAtCommand(const char* at_cmd, uint32_t timeout_ms) {
-    AT_Cmd_Config_t at_cfg = {at_cmd, NULL, timeout_ms, 0, "Simple Command", false, NULL};
-    return CommuSend_4gAtCommand(&at_cfg);
-}
-
-/**
- * @brief 发送AT命令并等待OK响应
- * @param at_cmd AT命令字符串
- * @param timeout_ms 超时时间（毫秒）
- * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
- */
-static inline BaseType_t CommuSend_AtCommandWithOk(const char* at_cmd, uint32_t timeout_ms) {
-    AT_Cmd_Config_t at_cfg = {at_cmd, "OK", timeout_ms, 0, "Command with OK", false, NULL};
-    return CommuSend_4gAtCommand(&at_cfg);
-}
 
 #endif /* __TSK_COMMU_SEND_H */

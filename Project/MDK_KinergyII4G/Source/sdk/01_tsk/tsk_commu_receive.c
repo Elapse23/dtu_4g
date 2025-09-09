@@ -30,109 +30,24 @@
 #include "bsp_log_manager.h"
 #include "tsk_commu_send.h"
 #include "tsk_4g_init.h"
-
+#include "tsk_commu_receive.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-/* 任务参数 */
-#define COMMU_TASK_STACK_SIZE       (configMINIMAL_STACK_SIZE * 2)
-#define COMMU_TASK_PRIORITY         (tskIDLE_PRIORITY + 4)
-#define COMMU_PROCESS_DELAY_MS      50
+/* 内部函数声明 */
+static bool lte_receive_data_to_mcu(const uint8_t* data, size_t length);
 
-/* 接收缓冲区大小 */
-#define RX_BUFFER_SIZE              256
-#define MAX_MESSAGE_LENGTH          128
 
-/* 通信处理状态 */
-typedef enum {
-    COMMU_STATE_IDLE = 0,
-    COMMU_STATE_RECEIVING,
-    COMMU_STATE_PROCESSING,
-    COMMU_STATE_RESPONDING
-} CommuState_t;
-
-/* 消息类型定义 */
-typedef struct {
-    uint8_t data[MAX_MESSAGE_LENGTH];
-    uint16_t length;
-    UART_ID_t source_uart;
-} CommuMessage_t;
 
 /* 静态变量 */
 static CommuState_t s_commu_state = COMMU_STATE_IDLE;
 static uint8_t s_rx_buffer[RX_BUFFER_SIZE];
 static CommuMessage_t s_current_message;
 static TaskHandle_t s_receive_task_handle = NULL;
-static uint32_t s_lte_debug_counter = 0;  /* LTE调试计数器 */
 
-/* 私有函数声明 */
-static void process_uart_data(UART_ID_t uart_id);
-static void handle_received_message(CommuMessage_t* message);
-static void send_response(UART_ID_t uart_id, const char* response);
-static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* response, uint16_t max_response_len);
 
-/* 前向声明 */
-void vCommuReceiveTask(void* pvParameters);
 
-/**
- * @brief 初始化通信接收任务
- * @return BaseType_t 初始化结果
- */
-BaseType_t CommuReceive_Init(void)
-{
-    BaseType_t result;
-    
-    /* 创建通信接收处理任务 */
-    result = xTaskCreate(vCommuReceiveTask, "CommuReceiveTask", 
-                        COMMU_TASK_STACK_SIZE, NULL, 
-                        COMMU_TASK_PRIORITY, &s_receive_task_handle);
-    
-    if (result != pdPASS) {
-        LOG_ERROR(LOG_MODULE_PROTOCOL, "Failed to create communication receive task");
-        return pdFAIL;
-    }
-    
-    LOG_INFO(LOG_MODULE_PROTOCOL, "Communication receive task initialized");
-    return pdPASS;
-}
-
-/**
- * @brief 通信接收任务主函数
- * @param pvParameters 任务参数（未使用）
- */
-void vCommuReceiveTask(void* pvParameters)
-{
-    (void)pvParameters;
-    
-    LOG_INFO(LOG_MODULE_PROTOCOL, "Communication receive task started");
-    
-    /* 任务主循环 */
-    while (1) {
-        /* 喂狗 - 防止看门狗复位 */
-
-        
-        // /* 定期输出LTE串口状态调试信息 */
-        // s_lte_debug_counter++;
-        // if (s_lte_debug_counter >= 100) {  /* 每5秒输出一次状态 (50ms * 100) */
-        //     s_lte_debug_counter = 0;
-        //     uint32_t lte_available = UART_RingBuffer_GetAvailableBytes(UART_ID_LTE);
-        //     LOG_INFO(LOG_MODULE_PROTOCOL, "LTE UART status check - Available bytes: %d", lte_available);
-        // }
-        
-        /* 处理RS485串口数据 */
-        process_uart_data(UART_ID_RS485);
-        
-        /* 处理LOG串口数据（用于调试命令） */
-        process_uart_data(UART_ID_LOG);
-        
-        /* 处理LTE串口数据 */
-        process_uart_data(UART_ID_LTE);
-        
-        /* 任务延时，避免占用过多CPU */
-        vTaskDelay(pdMS_TO_TICKS(COMMU_PROCESS_DELAY_MS));
-    }
-}
 
 /**
  * @brief 处理指定串口的接收数据
@@ -160,26 +75,40 @@ static void process_uart_data(UART_ID_t uart_id)
         /* 限制读取长度 */
         bytes_to_read = (available_bytes > sizeof(s_rx_buffer)) ? sizeof(s_rx_buffer) : available_bytes;
         
-        /* 接收数据 */
-        result = UART_RingBuffer_Receive(uart_id, s_rx_buffer, bytes_to_read, 10);
+        /* 对于LTE串口，需要在互斥量保护下读取数据 */
+        if (uart_id == UART_ID_LTE) {
+            /* 尝试获取LTE访问互斥量 */
+            if (AcquireLteAccessMutex(10)) {  /* 短暂超时 */
+                /* 接收数据 */
+                result = UART_RingBuffer_Receive(uart_id, s_rx_buffer, bytes_to_read, 10);
+                
+                if (result == UART_OK) {
+                    LOG_DEBUG(LOG_MODULE_PROTOCOL, "LTE shared data content: %.*s", bytes_to_read, s_rx_buffer);
+                    
+                    /* 使用统一接口进行数据路由 */
+                    bool routing_success = lte_receive_data_to_mcu(s_rx_buffer, bytes_to_read);
+                    
+                    if (!routing_success) {
+                        LOG_ERROR(LOG_MODULE_PROTOCOL, "Failed to route shared LTE data via unified interface (%d bytes)", bytes_to_read);
+                    }
+                }
+                
+                /* 释放LTE访问互斥量 */
+                ReleaseLteAccessMutex();
+            } else {
+                /* 获取互斥量失败，说明4G任务正在执行AT指令，跳过这次处理 */
+                LOG_DEBUG(LOG_MODULE_PROTOCOL, "LTE mutex busy, skipping data read");
+                return; /* 直接返回，下次循环再试 */
+            }
+        } else {
+            /* 其他串口正常处理 */
+            result = UART_RingBuffer_Receive(uart_id, s_rx_buffer, bytes_to_read, 10);
+        }
         
         if (result == UART_OK) {
-            /* 为调试命令显示接收到的内容（仅显示LOG和RS485串口的命令） */
-            if (uart_id == UART_ID_LOG || uart_id == UART_ID_RS485) {
-                LOG_INFO(LOG_MODULE_PROTOCOL, "CMD received from UART%d: [%.*s]", uart_id, bytes_to_read, s_rx_buffer);
-            }
-            
             /* 根据串口类型进行不同处理 */
-            if (uart_id == UART_ID_LTE) {
-                /* LTE串口数据：转发给4G数据处理队列 */
-                LOG_DEBUG(LOG_MODULE_PROTOCOL, "LTE data content: %.*s", bytes_to_read, s_rx_buffer);
-                
-                if (!Quectel4G_SendDataToQueue(s_rx_buffer, bytes_to_read)) {
-                    LOG_WARN(LOG_MODULE_PROTOCOL, "Failed to forward LTE data to 4G queue (%d bytes)", bytes_to_read);
-                } else {
-                    LOG_DEBUG(LOG_MODULE_PROTOCOL, "Forwarded %d bytes from LTE to 4G queue", bytes_to_read);
-                }
-            } else if (uart_id == UART_ID_RS485 || uart_id == UART_ID_LOG) {
+            if (uart_id == UART_ID_RS485 || uart_id == UART_ID_LOG) 
+            {
                 /* RS485和LOG串口：本地处理命令 */
                 if (bytes_to_read <= MAX_MESSAGE_LENGTH) {
                     memcpy(s_current_message.data, s_rx_buffer, bytes_to_read);
@@ -287,7 +216,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
     }
     else if (strncmp(command_buffer, "STATUS", 6) == 0) {
         /* 状态查询命令 */
-        QuectelState_t module_state = Quectel4G_GetState();
+        LteState_t module_state = Lte_GetState();
         snprintf(response, max_response_len, "STATUS:READY,STATE:%d,4G_STATE:%d\r\n", 
                 (int)s_commu_state, (int)module_state);
         return pdTRUE;
@@ -301,7 +230,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         /* 重置命令 */
         snprintf(response, max_response_len, "RESET:OK\r\n");
         /* 发送4G模块软重置命令 */
-        Quectel4G_SoftReset();
+        Lte_SoftReset();
         return pdTRUE;
     }
     else if (strncmp(command_buffer, "PING", 4) == 0) {
@@ -318,8 +247,17 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         }
         
         const char* test_cmd = "AT";
-        AT_Cmd_Config_t at_cfg = {test_cmd, NULL, 1000, 0, "LTE Test", false, NULL};
-        BaseType_t result = CommuSend_4gAtCommand(&at_cfg);
+        AT_Cmd_Config_t at_cfg = {
+            .module_type = MODULE_TYPE_4G,
+            .at_cmd = test_cmd,
+            .expected_resp = NULL,
+            .timeout_ms = 1000,
+            .retries = 0,
+            .description = "LTE Test",
+            .critical = false,
+            .callback = NULL
+        };
+        BaseType_t result = CommuSend_LTECommand(&at_cfg);
         if (result == pdPASS) {
             snprintf(response, max_response_len, "LTE_TEST_SENT\r\n");
         } else {
@@ -343,6 +281,39 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         
         snprintf(response, max_response_len, "UART_STATUS:LTE=%d,RS485=%d,LOG=%d\r\n",
                  (int)lte_available, (int)rs485_available, (int)log_available);
+        return pdTRUE;
+    }
+    else if (strncmp(command_buffer, "BLE_CMD", 7) == 0) {
+        /* BLE指令转发格式: BLE_CMD,AT+BLE... */
+        char* ble_cmd = strchr(command_buffer, ',');
+        if (ble_cmd) {
+            ble_cmd++; // 跳过逗号
+            LOG_INFO(LOG_MODULE_PROTOCOL, "Extracted BLE command: [%s]", ble_cmd);
+            
+            /* 构建BLE AT指令配置 */
+            AT_Cmd_Config_t ble_cfg = {
+                .module_type = MODULE_TYPE_BLE,
+                .at_cmd = ble_cmd,
+                .expected_resp = "OK",
+                .timeout_ms = 3000,
+                .retries = 1,
+                .description = "BLE Command",
+                .critical = false,
+                .callback = NULL
+            };
+            
+            LOG_INFO(LOG_MODULE_PROTOCOL, "Executing BLE command: %s", ble_cmd);
+            
+            BaseType_t result = CommuSend_LTECommand(&ble_cfg);
+            
+            if (result == pdPASS) {
+                snprintf(response, max_response_len, "BLE_CMD_SENT_OK\r\n");
+            } else {
+                snprintf(response, max_response_len, "BLE_CMD_SEND_ERROR\r\n");
+            }
+            return pdTRUE;
+        }
+        snprintf(response, max_response_len, "BLE_CMD_ERROR:INVALID_FORMAT\r\n");
         return pdTRUE;
     }
     else if (strncmp(command_buffer, "FORWARD_ENABLE", 14) == 0) {
@@ -388,13 +359,13 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
                 
                 uint16_t server_port = (uint16_t)atoi(server_port_str);
                 
-                /* 连接4G TCP服务器 */
-                QuectelDataResult_t result = Quectel4G_ConnectTCP(server_ip, server_port, 0);
-                if (result == QUECTEL_DATA_OK) {
-                    snprintf(response, max_response_len, "4G_CONNECTING\r\n");
-                } else {
-                    snprintf(response, max_response_len, "4G_CONNECT_ERROR:%d\r\n", result);
-                }
+                /* 连接4G TCP服务器 - 功能暂未实现 */
+                // LteDataResult_t result = Lte_ConnectTCP(server_ip, server_port, 0);
+                // if (result == LTE_DATA_OK) {
+                    snprintf(response, max_response_len, "4G_CONNECT_NOT_IMPLEMENTED\r\n");
+                // } else {
+                //     snprintf(response, max_response_len, "4G_CONNECT_ERROR:%d\r\n", result);
+                // }
                 return pdTRUE;
             }
         }
@@ -428,8 +399,17 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
                 LOG_INFO(LOG_MODULE_PROTOCOL, "Using simplified send for query command: %s", at_cmd);
                 
                 /* 直接发送命令，不等待响应 */
-                AT_Cmd_Config_t at_cfg = {at_cmd, NULL, 1000, 0, "Query Command", false, NULL};
-                BaseType_t uart_result = CommuSend_4gAtCommand(&at_cfg);
+                AT_Cmd_Config_t at_cfg = {
+                    .module_type = MODULE_TYPE_4G,
+                    .at_cmd = at_cmd,
+                    .expected_resp = NULL,
+                    .timeout_ms = 1000,
+                    .retries = 0,
+                    .description = "Query Command",
+                    .critical = false,
+                    .callback = NULL
+                };
+                BaseType_t uart_result = CommuSend_LTECommand(&at_cfg);
                 
                 if (uart_result == pdPASS) {
                     LOG_INFO(LOG_MODULE_PROTOCOL, "AT command sent successfully: %s", at_cmd);
@@ -444,7 +424,16 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
             
             /* 其他命令使用标准流程 */
             /* 构建AT命令配置，使用较短的超时时间防止死锁 */
-            AT_Cmd_Config_t cmd_config = {at_cmd, "OK", 2000, 0, "User AT Command", false, NULL};
+            AT_Cmd_Config_t cmd_config = {
+                .module_type = MODULE_TYPE_4G,
+                .at_cmd = at_cmd,
+                .expected_resp = "OK",
+                .timeout_ms = 2000,
+                .retries = 0,
+                .description = "User AT Command",
+                .critical = false,
+                .callback = NULL
+            };
             
             LOG_INFO(LOG_MODULE_PROTOCOL, "Executing AT command via 4G module: %s (timeout: %d ms)", 
                      at_cmd, cmd_config.timeout_ms);
@@ -453,7 +442,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
             TickType_t start_tick = xTaskGetTickCount();
             
             /* 执行4G AT命令 */
-            AT_Result_t result = Quectel4G_ExecuteAtCommand(&cmd_config);
+            AT_Result_t result = Lte_ExecuteAtCommand(&cmd_config);
             
             /* 计算执行时间 */
             TickType_t end_tick = xTaskGetTickCount();
@@ -498,4 +487,209 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
 CommuState_t CommuReceive_GetState(void)
 {
     return s_commu_state;
+}
+
+
+
+/**
+ * @brief 检查是否为4G模块响应
+ * @param data 数据缓冲区
+ * @param length 数据长度
+ * @return bool 是否为4G响应
+ */
+static bool is_4g_response(const uint8_t* data, size_t length)
+{
+    if (!data || length == 0) return false;
+    
+    const char* data_str = (const char*)data;
+    
+    /* 4G模块特有响应标识 */
+    const char* g4_indicators[] = {
+        "+QIURC:",      // Lte URC通知
+        "+QIOPEN:",     // Socket连接状态
+        "+QICLOSE:",    // Socket关闭
+        "+QIRD:",       // 数据读取
+        "+QISEND:",     // 数据发送状态
+        "+CME ERROR:",  // GSM错误
+        "+CMS ERROR:",  // SMS错误
+        "+CREG:",       // 网络注册状态
+        "+CGREG:",      // GPRS注册状态
+        "+CSQ:",        // 信号质量
+        "+COPS:",       // 运营商信息
+        "+QCCID:",      // ICCID响应
+        "RDY",          // 模块就绪
+        "+CFUN:",       // 功能模式
+        NULL
+    };
+    
+    for (int i = 0; g4_indicators[i] != NULL; i++) {
+        if (strstr(data_str, g4_indicators[i]) != NULL) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * @brief 检查是否为BLE模块响应
+ * @param data 数据缓冲区
+ * @param length 数据长度
+ * @return bool 是否为BLE响应
+ */
+static bool is_ble_response(const uint8_t* data, size_t length)
+{
+    if (!data || length == 0) return false;
+    
+    const char* data_str = (const char*)data;
+    
+    /* BLE模块特有响应标识 */
+    const char* ble_indicators[] = {
+        "+BLE",         // BLE相关响应
+        "+WRITE:",      // BLE写入事件
+        "+NOTIFY:",     // BLE通知事件
+        "+CONN:",       // BLE连接事件
+        "+DISC:",       // BLE断开事件
+        "+CWMODE:",     // WiFi模式响应
+        "+CWJAP:",      // WiFi连接响应
+        "+CWLAP:",      // WiFi扫描响应
+        "+CIPSTART:",   // TCP连接响应
+        "+CIPSTATUS:",  // TCP状态响应
+        "+IPD,",        // 接收到TCP数据
+        "WIFI ",        // ESP模块WiFi状态
+        "busy p...",    // ESP忙碌状态
+        "SEND OK",      // ESP发送完成
+        "SEND FAIL",    // ESP发送失败
+        "ALREADY CONNECT", // 已连接
+        NULL
+    };
+    
+    for (int i = 0; ble_indicators[i] != NULL; i++) {
+        if (strstr(data_str, ble_indicators[i]) != NULL) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+
+/**
+ * @brief 识别数据来源（4G或BLE模块）
+ * @param data 数据缓冲区
+ * @param length 数据长度
+ * @return Data_Source_t 数据来源
+ */
+static Data_Source_t identify_data_source(const uint8_t* data, size_t length)
+{
+    if (!data || length == 0) {
+        return DATA_SOURCE_UNKNOWN;
+    }
+    const char* data_str = (const char*)data;
+    
+    /* 检查4G模块响应特征 */
+    if (is_4g_response(data, length)) {
+        LOG_DEBUG(LOG_MODULE_PROTOCOL, "Identified as 4G data: %.*s", (int)length, data_str);
+        return DATA_SOURCE_4G;
+    }
+
+    /* 检查BLE模块响应特征 */
+    if (is_ble_response(data, length)) {
+        LOG_DEBUG(LOG_MODULE_PROTOCOL, "Identified as BLE data: %.*s", (int)length, data_str);
+        return DATA_SOURCE_BLE;
+    }
+
+    return DATA_SOURCE_4G;  // 默认路由到4G模块
+
+}
+
+/**
+ * @brief 改进的数据路由函数 - 使用统一接口
+ * @param data 数据缓冲区
+ * @param length 数据长度
+ * @return bool 路由结果
+ */
+static bool lte_receive_data_to_mcu(const uint8_t* data, size_t length)
+{
+    bool result = false;
+    /* 识别数据来源 */
+    Data_Source_t data_source = identify_data_source(data, length);
+    ModuleType_t module_type;
+    
+    /* 将Data_Source_t转换为ModuleType_t */
+    switch (data_source) {
+        case DATA_SOURCE_4G:
+            module_type = MODULE_TYPE_4G;
+            break;
+        case DATA_SOURCE_BLE:
+            module_type = MODULE_TYPE_BLE;
+            break;
+        default:
+            module_type = MODULE_TYPE_4G;  // 默认为4G
+            break;
+    }
+    
+    switch (module_type) {
+        case MODULE_TYPE_4G:
+        case MODULE_TYPE_BLE:
+            if (LTE_SendDataToMCU(module_type, data, length)) 
+            {
+                result = true;
+            }
+            break;            
+        default:
+            LOG_WARN(LOG_MODULE_PROTOCOL, "No handler for module type %d", module_type);
+            break;
+    }
+    return result;
+
+}
+
+
+/**
+ * @brief 通信接收任务主函数
+ * @param pvParameters 任务参数（未使用）
+ */
+void vCommuReceiveTask(void* pvParameters)
+{
+    (void)pvParameters;
+    
+    LOG_INFO(LOG_MODULE_PROTOCOL, "Communication receive task started");
+    
+    /* 任务主循环 */
+    while (1) {
+        /* 喂狗 - 防止看门狗复位 */
+        
+        /* 处理RS485串口数据 */
+        process_uart_data(UART_ID_RS485);
+        
+        /* 处理LOG串口数据（用于调试命令） */
+        process_uart_data(UART_ID_LOG);
+        
+        /* 处理LTE串口数据 */
+        process_uart_data(UART_ID_LTE);
+        
+        /* 任务延时，避免占用过多CPU */
+        vTaskDelay(pdMS_TO_TICKS(COMMU_PROCESS_DELAY_MS));
+    }
+}
+/**
+ * @brief 初始化通信接收任务
+ * @return BaseType_t 初始化结果
+ */
+BaseType_t CommuReceive_Init(void)
+{
+    BaseType_t result;
+    
+    /* 创建通信接收处理任务 */
+    result = xTaskCreate(vCommuReceiveTask, "CommuReceiveTask", 
+                        COMMU_TASK_STACK_SIZE, NULL, 
+                        COMMU_TASK_PRIORITY, &s_receive_task_handle);
+    
+    if (result != pdPASS) {
+        LOG_ERROR(LOG_MODULE_PROTOCOL, "Failed to create communication receive task");
+        return pdFAIL;
+    }
+    
+    LOG_INFO(LOG_MODULE_PROTOCOL, "Communication receive task initialized");
+    return pdPASS;
 }
