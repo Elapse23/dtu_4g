@@ -22,7 +22,7 @@
 #define INIT_TASK_STACK_SIZE        (configMINIMAL_STACK_SIZE * 3)  /**< 初始化任务栈大小 */
 #define INIT_TASK_PRIORITY          (tskIDLE_PRIORITY + 4)          /**< 初始化任务优先级 */
 #define AT_COMMAND_TIMEOUT_MS       5000                            /**< AT指令默认超时时间 */
-#define INIT_RETRY_DELAY_MS         2000                            /**< 初始化重试间隔时间 */
+#define INIT_RETRY_DELAY_MS         500                            /**< 初始化重试间隔时间 */
 #define STATUS_CHECK_INTERVAL_MS    10000                           /**< 状态检查间隔时间 */
 
 /* 模块重启相关参数 */
@@ -120,7 +120,7 @@ typedef struct {
  */
 typedef struct {
     ModuleType_t module_type;       /**< 模块类型 - 指定目标模块（4G/WiFi/BT等） */
-    const char* at_cmd;             /**< AT指令字符串 - 要发送的完整AT指令（不含\r\n） */
+    const char* at_cmd;             /**< AT指令字符串 - 要发送的完整AT指令（含\r\n） */
     const char* expected_resp;      /**< 期望的响应字符串 - 用于判断指令是否执行成功 */
     uint32_t timeout_ms;            /**< 超时时间（毫秒） - 等待响应的最大时间 */
     uint8_t retries;                /**< 重试次数 - 指令失败时的最大重试次数 */
@@ -216,7 +216,11 @@ LteState_t Lte_GetState(void);
  * @return BaseType_t 操作结果
  */
 BaseType_t Lte_Reinitialize(void);
-
+/**
+ * @brief 获取4G模块初始化状态
+ * @return bool 初始化是否完成
+ */
+bool get_lte_initialization_status(void);
 /**
  * @brief 硬件重启4G模块
  * @return BaseType_t 操作结果

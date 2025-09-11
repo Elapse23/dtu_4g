@@ -131,7 +131,7 @@ Serial_Status_t Serial_Driver_Init(USART_Module* com, uint32_t baudrate) {
             USART_InitStructure.Mode                = USART_MODE_RX | USART_MODE_TX;
             USART_Init(LTE_UART, &USART_InitStructure);
             USART_ConfigInt(LTE_UART, USART_INT_RXDNE, ENABLE);
-            USART_ConfigInt(LTE_UART, USART_INT_IDLEF, ENABLE);
+            // USART_ConfigInt(LTE_UART, USART_INT_IDLEF, ENABLE); // 关闭IDLE中断
             USART_Enable(LTE_UART, ENABLE);
         }
     }

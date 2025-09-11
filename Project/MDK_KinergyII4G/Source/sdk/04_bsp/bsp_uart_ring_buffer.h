@@ -69,7 +69,9 @@ typedef struct {
     // RTOS同步对象
     void* tx_mutex;                         // 发送互斥锁
     void* rx_semaphore;                     // 接收信号量
-    void* tx_complete_semaphore;            // 发送完成信号量
+    void* tx_complete_semaphore;            // 发送完成信号量（保留，用于兼容性）
+    
+    // 注意：发送调试相关的字段已移除，因为现在使用直接轮询发送
 } UART_RingBuffer_t;
 
 // === 公共API函数 ===
@@ -163,6 +165,32 @@ UART_Status_t UART_RingBuffer_Printf(UART_ID_t uart_id, uint32_t timeout_ms, con
  */
 void UART_RingBuffer_IRQHandler(UART_ID_t uart_id);
 
+/**
+ * @brief 获取LTE中断调试信息
+ * @return LTE中断接收计数
+ */
+uint32_t UART_RingBuffer_GetLteIrqCount(void);
+
+/**
+ * @brief 获取LTE发送字节计数
+ * @return LTE发送字节计数
+ */
+uint32_t UART_RingBuffer_GetLteSendCount(void);
+
+/**
+ * @brief 获取LTE环形缓冲区写入统计
+ * @param write_ok 成功写入计数指针
+ * @param write_fail 失败写入计数指针
+ */
+void UART_RingBuffer_GetLteWriteStats(uint32_t* write_ok, uint32_t* write_fail);
+
+/**
+ * @brief 获取LTE最近接收的调试数据
+ * @param debug_data 输出缓冲区(至少8字节)
+ * @return 实际数据长度
+ */
+uint32_t UART_RingBuffer_GetLteDebugData(uint8_t* debug_data);
+
 // === 便捷宏定义 ===
 
 // 常用超时时间
@@ -190,11 +218,7 @@ void UART_RingBuffer_IRQHandler(UART_ID_t uart_id);
 #define UART_Printf_LTE(fmt, ...)       UART_RingBuffer_Printf(UART_ID_LTE, UART_TIMEOUT_DEFAULT, fmt, ##__VA_ARGS__)
 #define UART_Printf_LOG(fmt, ...)       UART_RingBuffer_Printf(UART_ID_LOG, UART_TIMEOUT_DEFAULT, fmt, ##__VA_ARGS__)
 
-// 串口转发控制函数
-void UART_RingBuffer_SetLogToLteForward(bool enable);
-void UART_RingBuffer_SetLteToLogForward(bool enable);
-bool UART_RingBuffer_IsLogToLteForwardEnabled(void);
-bool UART_RingBuffer_IsLteToLogForwardEnabled(void);
+// NOTE: 2025-09 移除原LOG<->LTE串口转发功能，若需调试请直接使用对应串口。
 
 #ifdef __cplusplus
 }

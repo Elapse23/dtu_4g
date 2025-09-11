@@ -54,11 +54,15 @@ RB_Status RingBuffer_Write(RingBuffer_t* rb, const void* data) {
     if (!rb || !rb->buffer || !data) return RB_ERROR_INIT;
     if (rb->count >= rb->capacity) return RB_ERROR_BUFFER_FULL;
 
-    // 此处可以添加临界区保护，防止多任务同时写入
+    // 完全禁用中断的临界区保护
+    portDISABLE_INTERRUPTS();
+    
     memcpy(rb->buffer + rb->tail * rb->element_size, data, rb->element_size);
     rb->tail = (rb->tail + 1) % rb->capacity;
     rb->count++;
-    // 结束临界区
+    
+    // 恢复中断
+    portENABLE_INTERRUPTS();
 
     // 信号量由上层驱动管理，环形缓冲区不负责信号量操作
     return RB_OK;
@@ -82,11 +86,29 @@ RB_Status RingBuffer_Read(RingBuffer_t* rb, void* data) {
     // 注意：信号量的获取(Take)应由消费者任务在使用Read之前完成，而不是在Read函数内部
     if (rb->count == 0) return RB_ERROR_BUFFER_EMPTY;
 
-    // 此处可以添加临界区保护
+    // 完全禁用中断的临界区保护
+    portDISABLE_INTERRUPTS();
+    
     memcpy(data, rb->buffer + rb->head * rb->element_size, rb->element_size);
     rb->head = (rb->head + 1) % rb->capacity;
     rb->count--;
-    // 结束临界区
+    
+    // 恢复中断
+    portENABLE_INTERRUPTS();
+    
+    return RB_OK;
+}
+
+RB_Status RingBuffer_ReadFromISR(RingBuffer_t* rb, void* data) {
+    if (!rb || !rb->buffer || !data) return RB_ERROR_INIT;
+    
+    if (rb->count == 0) return RB_ERROR_BUFFER_EMPTY;
+
+    // 在中断中不需要临界区保护，因为中断已经禁用了抢占
+    memcpy(data, rb->buffer + rb->head * rb->element_size, rb->element_size);
+    rb->head = (rb->head + 1) % rb->capacity;
+    rb->count--;
+    
     return RB_OK;
 }
 

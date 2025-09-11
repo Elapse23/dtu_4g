@@ -78,6 +78,9 @@ void vCommuReceiveTask(void* pvParameters);
  */
 CommuState_t CommuReceive_GetState(void);
 
+/* 全局变量声明 */
+extern bool s_lte_monitor_enabled;  /* LTE数据监控标志 - 控制是否将LTE发送的数据镜像到LOG串口 */
+
 /* 私有函数声明 */
 static void process_uart_data(UART_ID_t uart_id);
 static void handle_received_message(CommuMessage_t* message);

@@ -19,9 +19,10 @@
 #include <string.h>
 #include <stdio.h>
 
-// LOG到LTE转发功能控制
-static bool s_log_to_lte_forward_enabled = true;   // LOG串口数据转发到LTE串口
-static bool s_lte_to_log_forward_enabled = true;   // LTE串口数据转发到LOG串口
+/* 外部变量声明 - LTE数据监控标志 */
+extern bool s_lte_monitor_enabled;
+
+// NOTE: 2025-09 已移除LOG<->LTE转发功能，相关标志删除。
 
 // 静态缓冲区数组
 static uint8_t rs485_rx_buffer_storage[UART_RX_BUFFER_SIZE];
@@ -32,6 +33,15 @@ static uint8_t log_rx_buffer_storage[UART_RX_BUFFER_SIZE];
 static uint8_t log_tx_buffer_storage[UART_TX_BUFFER_SIZE];
 uint8_t lte_rx_buffer_storage[UART_RX_BUFFER_SIZE * 5];
 uint8_t lte_tx_buffer_storage[UART_TX_BUFFER_SIZE * 5];
+
+// 调试用静态变量
+static uint32_t s_lte_irq_count = 0;  // LTE中断计数器
+static uint32_t s_lte_send_count = 0; // LTE发送字节计数器
+static uint32_t s_lte_write_ok_count = 0; // LTE成功写入环形缓冲区计数
+static uint32_t s_lte_write_fail_count = 0; // LTE写入环形缓冲区失败计数
+static uint8_t s_lte_debug_bytes[8]; // LTE最近接收的调试数据
+static uint32_t s_lte_debug_index = 0; // 调试数据索引
+
 // 串口设备实例
 static UART_RingBuffer_t uart_devices[UART_COUNT];
 
@@ -236,80 +246,7 @@ UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint3
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) {
         return UART_ERR_PARAM;
-    }
-    
-    // LOG串口数据转发到LTE串口功能
-    if (uart_id == UART_ID_LOG && s_log_to_lte_forward_enabled) {
-        // 检查数据是否是AT命令格式（以AT开头或者是原始数据）
-        if (length >= 2) {
-            // 创建带换行符的AT命令
-            uint8_t lte_command[length + 2];
-            memcpy(lte_command, data, length);
-            
-            // 如果数据不以\r\n结尾，自动添加
-            bool needs_crlf = true;
-            if (length >= 2 && data[length-2] == '\r' && data[length-1] == '\n') {
-                needs_crlf = false;
-            }
-            
-            uint32_t lte_length = length;
-            if (needs_crlf) {
-                lte_command[length] = '\r';
-                lte_command[length + 1] = '\n';
-                lte_length = length + 2;
-            }
-            
-            // 直接发送到LTE串口，避免递归调用
-            UART_RingBuffer_t* lte_dev = get_uart_device(UART_ID_LTE);
-            if (lte_dev && lte_dev->is_initialized) {
-                
-                // 直接操作LTE串口的发送缓冲区，避免递归
-                UART_Status_t forward_result = UART_ERR_BUSY;
-                
-                // 检查信号量有效性
-                if (lte_dev->tx_mutex && lte_dev->tx_complete_semaphore) {
-                    // 获取LTE发送互斥锁
-                    if (xSemaphoreTake(lte_dev->tx_mutex, pdMS_TO_TICKS(timeout_ms)) == pdTRUE) {
-                        forward_result = UART_OK;
-                        
-                        // 将数据写入LTE发送缓冲区
-                        for (uint32_t i = 0; i < lte_length; i++) {
-                            if (RingBuffer_Write(&lte_dev->tx_ring_buffer, &lte_command[i]) != RB_OK) {
-                                forward_result = UART_ERR_BUFFER_FULL;
-                                break;
-                            }
-                        }
-                        
-                        if (forward_result == UART_OK) {
-                            // 启动LTE发送
-                            uint8_t tx_byte;
-                            if (RingBuffer_Read(&lte_dev->tx_ring_buffer, &tx_byte) == RB_OK) {
-                                USART_ConfigInt((USART_Module*)lte_dev->uart_instance, USART_INT_TXDE, ENABLE);
-                                USART_SendData((USART_Module*)lte_dev->uart_instance, tx_byte);
-                                
-                                // 等待LTE发送完成
-                                if (xSemaphoreTake(lte_dev->tx_complete_semaphore, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
-                                    forward_result = UART_ERR_TIMEOUT;
-                                }
-                            }
-                        }
-                        
-                        // 释放LTE互斥锁
-                        xSemaphoreGive(lte_dev->tx_mutex);
-                    }
-                }
-                
-                if (forward_result == UART_OK) {
-                    // 转发成功，LOG串口本身不需要发送
-                    return UART_OK;
-                } else {
-                    // 转发失败，继续正常的LOG串口发送流程
-                    // 这样调试信息仍然可以输出
-                }
-            }
-        }
-    }
-    
+    }    
     // 增加信号量有效性检查
     if (!uart_dev->tx_mutex || !uart_dev->tx_complete_semaphore) {
         return UART_ERR_INIT;
@@ -323,7 +260,7 @@ UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint3
     } else if (scheduler_state != taskSCHEDULER_RUNNING) {
         return UART_ERR_INIT;
     }
-    
+
     // 限制超时时间范围，防止溢出
     if (timeout_ms > 60000) {  // 最大60秒
         timeout_ms = 60000;
@@ -334,54 +271,43 @@ UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint3
         UART_LOG_INFO("UART %d send busy", uart_id);
         return UART_ERR_TIMEOUT;
     }
-    
     UART_Status_t result = UART_OK;
 
-    // 将数据写入发送缓冲区
-    for (uint32_t i = 0; i < length; i++) {
-        if (RingBuffer_Write(&uart_dev->tx_ring_buffer, &data[i]) != RB_OK) {
-            result = UART_ERR_BUFFER_FULL;
-            break;
+    // RS485需要切换到发送模式
+    if (uart_id == UART_ID_RS485) {
+        RS485_DIR_TX();
+    }
+    
+    // 启动发送 - 简化为直接轮询发送，避免缓冲区竞争条件
+    USART_Module* USARTx = (USART_Module*)uart_dev->uart_instance;
+    
+    // LTE调试：记录发送数据
+    if (uart_id == UART_ID_LTE) {
+        // 注意：由于在互斥锁内，这里应该避免使用可能导致任务切换的LOG函数
+        // 但为了调试，我们记录一下发送的字节数
+        s_lte_send_count += length;
+        
+        // 如果启用了LTE监控，将数据同步发送到LOG串口
+        if (s_lte_monitor_enabled) {
+            // 发送数据到LOG串口 - 使用轮询方式避免任务切换
+            UART_RingBuffer_SendPolling(UART_ID_LOG, data, length, 1000);
         }
     }
     
-    if (result == UART_OK) {
-        // RS485需要切换到发送模式
-        if (uart_id == UART_ID_RS485) {
-            RS485_DIR_TX();
-        }
+    for (uint32_t i = 0; i < length; i++) {
+        // 等待发送数据寄存器空中断标志位
+        while (USART_GetFlagStatus(USARTx, USART_FLAG_TXDE) == RESET);
+        USART_SendData(USARTx, data[i]);
+    }
+    // 等待传输完成标志 (确保最后一个字节完全发送出去)
+    while (USART_GetFlagStatus(USARTx, USART_FLAG_TXC) == RESET);
 
-        // 启动发送，发送缓冲区中的第一个字节
-        uint8_t tx_byte;
-        if (RingBuffer_Read(&uart_dev->tx_ring_buffer, &tx_byte) == RB_OK) {
-            // 安全检查：确保信号量有效
-            if (uart_dev->tx_complete_semaphore == NULL) {
-                UART_LOG_INFO("TX_COMPLETE_SEMAPHORE_NULL");
-                result = UART_ERR_INIT;
-            } else {
-                // 使能发送中断
-                USART_ConfigInt((USART_Module*)uart_dev->uart_instance, USART_INT_TXDE, ENABLE);
-                // 发送第一个字节
-                USART_SendData((USART_Module*)uart_dev->uart_instance, tx_byte);
-                // 等待发送完成 - 检查是否在中断中调用
-                if (xPortIsInsideInterrupt() == pdTRUE) {
-                    // 在中断中不能使用阻塞API
-                    result = UART_ERR_BUSY;
-                } else {
-                    if (xSemaphoreTake(uart_dev->tx_complete_semaphore, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
-                        UART_LOG_INFO("UART %d send timeout", uart_id);
-                        result = UART_ERR_TIMEOUT;
-                    }
-                }
-            }
-        }
-        
-        // RS485发送完成后切换回接收模式
-        if (uart_id == UART_ID_RS485) {
-            // 等待发送完全完成
-            while (USART_GetFlagStatus((USART_Module*)uart_dev->uart_instance, USART_FLAG_TXC) == RESET);
-            RS485_DIR_RX();
-        }
+
+    // RS485发送完成后切换回接收模式
+    if (uart_id == UART_ID_RS485) {
+        // 等待发送完全完成
+        while (USART_GetFlagStatus((USART_Module*)uart_dev->uart_instance, USART_FLAG_TXC) == RESET);
+        RS485_DIR_RX();
     }
     
     // 释放互斥锁
@@ -506,6 +432,45 @@ UART_Status_t UART_RingBuffer_ReadByte(UART_ID_t uart_id, uint8_t* data) {
 }
 
 /**
+ * @brief 获取LTE中断调试信息
+ * @return 中断接收计数
+ */
+uint32_t UART_RingBuffer_GetLteIrqCount(void) {
+    return s_lte_irq_count;
+}
+
+/**
+ * @brief 获取LTE发送字节计数
+ * @return 发送字节计数
+ */
+uint32_t UART_RingBuffer_GetLteSendCount(void) {
+    return s_lte_send_count;
+}
+
+/**
+ * @brief 获取LTE环形缓冲区写入统计
+ * @param write_ok 成功写入计数指针
+ * @param write_fail 失败写入计数指针
+ */
+void UART_RingBuffer_GetLteWriteStats(uint32_t* write_ok, uint32_t* write_fail) {
+    if (write_ok) *write_ok = s_lte_write_ok_count;
+    if (write_fail) *write_fail = s_lte_write_fail_count;
+}
+
+/**
+ * @brief 获取LTE最近接收的调试数据
+ * @param debug_data 输出缓冲区(至少8字节)
+ * @return 实际数据长度
+ */
+uint32_t UART_RingBuffer_GetLteDebugData(uint8_t* debug_data) {
+    if (debug_data && s_lte_write_ok_count > 0) {
+        memcpy(debug_data, s_lte_debug_bytes, 8);
+        return (s_lte_write_ok_count > 8) ? 8 : s_lte_write_ok_count;
+    }
+    return 0;
+}
+
+/**
  * @brief 获取接收缓冲区中可读取的字节数
  * @param uart_id 串口ID
  * @return 可读取的字节数，错误返回0
@@ -530,7 +495,12 @@ UART_Status_t UART_RingBuffer_FlushRx(UART_ID_t uart_id) {
         return UART_ERR_PARAM;
     }
     
+    /* 先清空环形缓冲区逻辑状态 */
     RingBuffer_Clear(&uart_dev->rx_ring_buffer);
+    
+    /* 可选：物理清空缓冲区数据（如果需要确保数据真的被清除） */
+    memset(uart_dev->rx_buffer_storage, 0, UART_RX_BUFFER_SIZE * (uart_id == UART_ID_LTE ? 5 : 1));
+    
     return UART_OK;
 }
 
@@ -538,6 +508,7 @@ UART_Status_t UART_RingBuffer_FlushRx(UART_ID_t uart_id) {
  * @brief 清空发送缓冲区
  * @param uart_id 串口ID
  * @return UART_Status_t 状态码
+ * @note 当前使用直接轮询发送，此函数主要用于兼容性
  */
 UART_Status_t UART_RingBuffer_FlushTx(UART_ID_t uart_id) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
@@ -545,6 +516,8 @@ UART_Status_t UART_RingBuffer_FlushTx(UART_ID_t uart_id) {
         return UART_ERR_PARAM;
     }
     
+    // 注意：由于使用直接轮询发送，发送缓冲区通常为空
+    // 这里清空缓冲区主要用于兼容性
     RingBuffer_Clear(&uart_dev->tx_ring_buffer);
     return UART_OK;
 }
@@ -566,62 +539,29 @@ void UART_RingBuffer_IRQHandler(UART_ID_t uart_id) {
     if (USART_GetIntStatus(USARTx, USART_INT_RXDNE) == SET) {
         uint8_t received_byte = USART_ReceiveData(USARTx);
         
-        // LTE串口数据转发到LOG串口（用于查看4G模块响应）
-        if (uart_id == UART_ID_LTE && s_lte_to_log_forward_enabled) {
-            UART_RingBuffer_t* log_dev = get_uart_device(UART_ID_LOG);
-            if (log_dev && log_dev->is_initialized) {
-                // 将LTE接收的数据同时写入LOG串口的发送缓冲区
-                if (RingBuffer_Write(&log_dev->tx_ring_buffer, &received_byte) == RB_OK) {
-                    // 如果LOG串口发送缓冲区有数据且当前没在发送，启动发送
-                    if (log_dev->tx_ring_buffer.count == 1) { // 刚写入第一个字节
-                        uint8_t log_tx_byte;
-                        if (RingBuffer_Read(&log_dev->tx_ring_buffer, &log_tx_byte) == RB_OK) {
-                            USART_Module* LOG_USARTx = (USART_Module*)log_dev->uart_instance;
-                            USART_SendData(LOG_USARTx, log_tx_byte);
-                            USART_ConfigInt(LOG_USARTx, USART_INT_TXDE, ENABLE);
-                        }
-                    }
-                }
-            }
+        // LTE串口调试计数
+        if (uart_id == UART_ID_LTE) {
+            s_lte_irq_count++;
         }
         
         // 将接收到的字节写入环形缓冲区
-        if (RingBuffer_WriteFromISR(&uart_dev->rx_ring_buffer, &received_byte, &xHigherPriorityTaskWoken) == RB_OK) {
+        RB_Status rb_result = RingBuffer_WriteFromISR(&uart_dev->rx_ring_buffer, &received_byte, &xHigherPriorityTaskWoken);
+        if (rb_result == RB_OK) {
+            // 写入成功
+            if (uart_id == UART_ID_LTE) {
+                s_lte_write_ok_count++;
+                // 记录最新接收的几个字节用于调试
+                s_lte_debug_bytes[s_lte_debug_index] = received_byte;
+                s_lte_debug_index = (s_lte_debug_index + 1) % 8;
+            }
             // 通知有新数据到达
             xSemaphoreGiveFromISR(uart_dev->rx_semaphore, &xHigherPriorityTaskWoken);
-        }
-        
-        USART_ClrIntPendingBit(USARTx, USART_INT_RXDNE);
-    }
-    
-    // 处理发送中断
-    if (USART_GetIntStatus(USARTx, USART_INT_TXDE) == SET) {
-        uint8_t tx_byte;
-        
-        // 从发送缓冲区读取下一个字节
-        if (RingBuffer_Read(&uart_dev->tx_ring_buffer, &tx_byte) == RB_OK) {
-            // 发送下一个字节
-            USART_SendData(USARTx, tx_byte);
         } else {
-            // 发送缓冲区为空，禁用发送中断
-            USART_ConfigInt(USARTx, USART_INT_TXDE, DISABLE);
-            
-            // 通知发送完成
-            xSemaphoreGiveFromISR(uart_dev->tx_complete_semaphore, &xHigherPriorityTaskWoken);
+            // 写入失败
+            if (uart_id == UART_ID_LTE) {
+                s_lte_write_fail_count++;
+            }
         }
-        
-        USART_ClrIntPendingBit(USARTx, USART_INT_TXDE);
-    }
-    
-    // 处理IDLE中断（一帧数据接收完成）
-    if (USART_GetIntStatus(USARTx, USART_INT_IDLEF) == SET) {
-        // 清除IDLE标志
-        uint32_t temp = USARTx->STS;
-        temp = USARTx->DAT;
-        (void)temp; // 避免编译器警告
-        
-        // 可以在这里处理帧接收完成的逻辑
-        // 例如通知应用层一帧数据接收完成
     }
     
     // 如果有更高优先级的任务被唤醒，进行任务切换
@@ -672,34 +612,4 @@ UART_Status_t UART_RingBuffer_Printf(UART_ID_t uart_id, uint32_t timeout_ms, con
     return UART_RingBuffer_Send(uart_id, (const uint8_t*)buffer, length, timeout_ms);
 }
 
-/**
- * @brief 启用或禁用LOG串口到LTE串口的转发
- * @param enable true-启用转发，false-禁用转发
- */
-void UART_RingBuffer_SetLogToLteForward(bool enable) {
-    s_log_to_lte_forward_enabled = enable;
-}
-
-/**
- * @brief 启用或禁用LTE串口到LOG串口的转发
- * @param enable true-启用转发，false-禁用转发
- */
-void UART_RingBuffer_SetLteToLogForward(bool enable) {
-    s_lte_to_log_forward_enabled = enable;
-}
-
-/**
- * @brief 检查LOG串口到LTE串口转发是否启用
- * @return bool true-已启用，false-已禁用
- */
-bool UART_RingBuffer_IsLogToLteForwardEnabled(void) {
-    return s_log_to_lte_forward_enabled;
-}
-
-/**
- * @brief 检查LTE串口到LOG串口转发是否启用
- * @return bool true-已启用，false-已禁用
- */
-bool UART_RingBuffer_IsLteToLogForwardEnabled(void) {
-    return s_lte_to_log_forward_enabled;
-}
+// (原转发控制API已移除)

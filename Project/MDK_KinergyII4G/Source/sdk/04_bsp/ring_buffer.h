@@ -42,6 +42,7 @@ RB_Status RingBuffer_Init(RingBuffer_t* rb, uint8_t* buffer, uint32_t capacity, 
 RB_Status RingBuffer_Deinit(RingBuffer_t* rb);
 RB_Status RingBuffer_Write(RingBuffer_t* rb, const void* data);
 RB_Status RingBuffer_Read(RingBuffer_t* rb, void* data);
+RB_Status RingBuffer_ReadFromISR(RingBuffer_t* rb, void* data);
 RB_Status RingBuffer_WriteFromISR(RingBuffer_t* rb, const void* data, void* xHigherPriorityTaskWoken);
 void RingBuffer_Clear(RingBuffer_t* rb);
 size_t RingBuffer_Peek(RingBuffer_t* rb, uint8_t* dest, size_t max_len);

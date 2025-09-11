@@ -55,7 +55,7 @@ static uint8_t s_soft_reset_count = 0;                 /**< 软件重启计数�
 static bool s_lte_module_hardware_initialized = false; /**< LTE模块硬件初始化标志 */
 
 /* 队列句柄 */
-static QueueHandle_t s_lte_to_mcu_queue = NULL;        /**< 4G AT响应队列 */
+static QueueHandle_t s_lte_receive_queue = NULL;        /**< 4G AT响应队列 */
 
 /* 互斥量 */
 static SemaphoreHandle_t s_lte_access_mutex = NULL;    /**< LTE串口访问互斥量，用于与commu_receiver任务互斥 */
@@ -263,13 +263,19 @@ static bool get_response_data(char* response_buffer, size_t buffer_size, uint32_
     /* 清空响应缓冲区 */
     memset(response_buffer, 0, buffer_size);
     
-    /* 获取LTE串口访问互斥量，确保与commu_receiver任务互斥 */
-    if (xSemaphoreTake(s_lte_access_mutex, timeout_ticks) != pdTRUE) {
-        LOG_ERROR(LOG_MODULE_NETWORK, "Failed to acquire LTE access mutex for response reading");
-        return false;
+    /* 临时绕过互斥量检查，直接读取数据 */
+    bool mutex_acquired = false;
+    if (s_lte_access_mutex) {
+        /* 获取LTE串口访问互斥量，确保与commu_receiver任务互斥 */
+        if (xSemaphoreTake(s_lte_access_mutex, timeout_ticks) == pdTRUE) {
+            mutex_acquired = true;
+            LOG_DEBUG(LOG_MODULE_NETWORK, "Acquired LTE mutex, reading response from UART (timeout: %dms)", timeout_ms);
+        } else {
+            LOG_ERROR(LOG_MODULE_NETWORK, "Failed to acquire LTE access mutex for response reading");
+        }
+    } else {
+        LOG_WARN(LOG_MODULE_NETWORK, "LTE access mutex not initialized, proceeding without mutex");
     }
-    
-    LOG_DEBUG(LOG_MODULE_NETWORK, "Acquired LTE mutex, reading response from UART (timeout: %dms)", timeout_ms);
     
     /* 主要读取循环 - 直接从串口读取数据 */
     while ((xTaskGetTickCount() - start_tick) < timeout_ticks) {
@@ -305,7 +311,9 @@ static bool get_response_data(char* response_buffer, size_t buffer_size, uint32_
     }
     
     /* 释放LTE串口访问互斥量 */
-    xSemaphoreGive(s_lte_access_mutex);
+    if (mutex_acquired) {
+        xSemaphoreGive(s_lte_access_mutex);
+    }
     
     /* 记录结果 */
     uint32_t elapsed_ms = (xTaskGetTickCount() - start_tick) * portTICK_PERIOD_MS;
@@ -368,7 +376,7 @@ AT_Result_t execute_at_command_with_config(const AT_Cmd_Config_t* cmd_config)
         return AT_RESULT_ERROR;
     }
     /* 特殊处理：仅等待响应，不发送指令 */
-    if (cmd_config->at_cmd == NULL) {
+    if (cmd_config->at_cmd == NULL || strlen(cmd_config->at_cmd) == 0) {
         LOG_DEBUG(LOG_MODULE_NETWORK, "Waiting for module response: %s (%s)", 
                  cmd_config->expected_resp ? cmd_config->expected_resp : "Any", 
                  cmd_config->description ? cmd_config->description : "No description");
@@ -410,7 +418,7 @@ AT_Result_t execute_at_command_with_config(const AT_Cmd_Config_t* cmd_config)
                 LOG_INFO(LOG_MODULE_NETWORK, "Retrying wait for response (%d/%d): %s", 
                         retry_count, cmd_config->retries, 
                         cmd_config->expected_resp ? cmd_config->expected_resp : "Any");
-                vTaskDelay(pdMS_TO_TICKS(1000));  // 重试前延时
+                vTaskDelay(pdMS_TO_TICKS(100));  // 重试前延时
             }
         }
         
@@ -430,15 +438,31 @@ AT_Result_t execute_at_command_with_config(const AT_Cmd_Config_t* cmd_config)
     }
     
     LOG_INFO(LOG_MODULE_NETWORK, "Executing AT command: [%s] (%s)", 
-             cmd_config->at_cmd, cmd_config->description ? cmd_config->description : "No description");
+            cmd_config->at_cmd, cmd_config->description ? cmd_config->description : "No description");
     
     /* 重试循环 */
     while (retry_count <= cmd_config->retries) {
-        snprintf(at_command, sizeof(at_command), "%s\r\n", cmd_config->at_cmd);
-        /* 发送命令 */
-        BaseType_t send_result = CommuSend_UartData(UART_ID_LTE, (const uint8_t*)at_command, 
-                                                   strlen(at_command), cmd_config->timeout_ms);
+        // snprintf(at_command, sizeof(at_command), "%s\r\n", cmd_config->at_cmd);
+        /* 调试：检查AT指令内容是否正常 */
+        size_t cmd_len = strlen(cmd_config->at_cmd);
+        LOG_DEBUG(LOG_MODULE_NETWORK, "About to send AT command: [%s], len=%d", 
+                cmd_config->at_cmd, cmd_len);
         
+        if (cmd_len >= 2) {
+            LOG_DEBUG(LOG_MODULE_NETWORK, "Last 2 bytes of AT command: 0x%02X 0x%02X", 
+                    (unsigned char)cmd_config->at_cmd[cmd_len-2],
+                    (unsigned char)cmd_config->at_cmd[cmd_len-1]);
+        }
+        
+        /* 清空LTE发送缓冲区，避免重试时数据累积 */
+        UART_RingBuffer_FlushTx(UART_ID_LTE);
+        
+        /* 清空LTE接收缓冲区，确保接收到的是当前命令的响应 */
+        UART_RingBuffer_FlushRx(UART_ID_LTE);
+        
+        /* 发送命令 */
+        BaseType_t send_result = CommuSend_UartData(UART_ID_LTE, (const uint8_t*)cmd_config->at_cmd, 
+                                                    strlen(cmd_config->at_cmd), cmd_config->timeout_ms);        
         if (send_result != pdPASS) {
             LOG_ERROR(LOG_MODULE_NETWORK, "Failed to send AT command (result: %d): %s", send_result, cmd_config->at_cmd);
             retry_count++;
@@ -546,8 +570,8 @@ bool Lte_ExecuteAtSequence(const AT_Cmd_Config_t* cmd_sequence, uint8_t count)
     
     /* 逐个执行AT指令序列 */
     for (i = 0; i < count; i++) {
-        const char* cmd_display = strlen(cmd_sequence[i].at_cmd) > 0 ? cmd_sequence[i].at_cmd : 
-                                (strlen(cmd_sequence[i].expected_resp) > 0 ? cmd_sequence[i].expected_resp : "Wait");
+        const char* cmd_display = (cmd_sequence[i].at_cmd && strlen(cmd_sequence[i].at_cmd) > 0) ? cmd_sequence[i].at_cmd : 
+                                (cmd_sequence[i].expected_resp && strlen(cmd_sequence[i].expected_resp) > 0) ? cmd_sequence[i].expected_resp : "Wait";
         LOG_DEBUG(LOG_MODULE_NETWORK, "Executing command %d/%d: %s", 
                 i + 1, count, cmd_display);
         
@@ -569,7 +593,7 @@ bool Lte_ExecuteAtSequence(const AT_Cmd_Config_t* cmd_sequence, uint8_t count)
         }
         /* 指令间适当延时，避免发送过快 */
         if (i < (count - 1)) {
-            vTaskDelay(pdMS_TO_TICKS(500));
+            vTaskDelay(pdMS_TO_TICKS(100));
         }
     }
     return all_success;
@@ -995,7 +1019,7 @@ static bool check_network_registration_sequence(void)
         /* 检查网络注册状态 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT+CREG?",
+            .at_cmd = "AT+CREG?\r\n",
             .expected_resp = "+CREG:",
             .timeout_ms = 5000,
             .retries = 30,
@@ -1005,7 +1029,7 @@ static bool check_network_registration_sequence(void)
         /* 检查GPRS注册状态 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT+CGREG?",
+            .at_cmd = "AT+CGREG?\r\n",
             .expected_resp = "+CGREG:",
             .timeout_ms = 5000,
             .retries = 5,
@@ -1026,12 +1050,12 @@ static bool check_network_registration_sequence(void)
  */
 static bool setup_data_connection_sequence(void)
 {
-    char apn_command[128];
+    static char apn_command[128];  // 使用静态变量避免栈内存问题
     
     update_state(LTE_STATE_CONNECTING);
     
     /* 配置APN命令 */
-    snprintf(apn_command, sizeof(apn_command), "AT+QICSGP=1,1,\"%s\",\"%s\",\"%s\",1", 
+    snprintf(apn_command, sizeof(apn_command), "AT+QICSGP=1,1,\"%s\",\"%s\",\"%s\",1\r\n", 
             s_init_config.apn, s_init_config.username, s_init_config.password);
     
     /* 定义数据连接建立序列 */
@@ -1049,7 +1073,7 @@ static bool setup_data_connection_sequence(void)
         /* 激活PDP上下文 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT+QIACT=1",
+            .at_cmd = "AT+QIACT=1\r\n",
             .expected_resp = "OK",
             .timeout_ms = 15000,
             .retries = 3,
@@ -1059,7 +1083,7 @@ static bool setup_data_connection_sequence(void)
         /* 查询IP地址 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT+QIACT?",
+            .at_cmd = "AT+QIACT?\r\n",
             .expected_resp = "+QIACT:",
             .timeout_ms = 3000,
             .retries = 1,
@@ -1097,7 +1121,7 @@ static void perform_initialization_sequence(void)
         /* 等待模块准备就绪信号 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "",  // 空命令表示仅等待响应
+            .at_cmd = NULL,  // NULL表示仅等待响应，不发送指令
             .expected_resp = "RDY",
             .timeout_ms = 15000,
             .retries = 1,
@@ -1107,7 +1131,7 @@ static void perform_initialization_sequence(void)
         /* 基本通信测试 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT",
+            .at_cmd = "AT\r\n",
             .expected_resp = "OK",
             .timeout_ms = 3000,
             .retries = 3,
@@ -1117,7 +1141,7 @@ static void perform_initialization_sequence(void)
         /* 设置回显模式 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = s_init_config.enable_echo ? "ATE1" : "ATE0",
+            .at_cmd = s_init_config.enable_echo ? "ATE1\r\n" : "ATE0\r\n",
             .expected_resp = "OK",
             .timeout_ms = 3000,
             .retries = 2,
@@ -1127,7 +1151,7 @@ static void perform_initialization_sequence(void)
         /* 设置全功能模式 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT+CFUN=1",
+            .at_cmd = "AT+CFUN=1\r\n",
             .expected_resp = "OK",
             .timeout_ms = 10000,
             .retries = 2,
@@ -1137,7 +1161,7 @@ static void perform_initialization_sequence(void)
         /* 获取版本信息 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "ATI",
+            .at_cmd = "ATI\r\n",
             .expected_resp = "OK",
             .timeout_ms = 5000,
             .retries = 1,
@@ -1147,7 +1171,7 @@ static void perform_initialization_sequence(void)
         /* 获取IMEI */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT+GSN",
+            .at_cmd = "AT+GSN\r\n",
             .expected_resp = "OK",
             .timeout_ms = 5000,
             .retries = 1,
@@ -1157,7 +1181,7 @@ static void perform_initialization_sequence(void)
         /* 获取ICCID */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT+QCCID",
+            .at_cmd = "AT+QCCID\r\n",
             .expected_resp = "OK",
             .timeout_ms = 5000,
             .retries = 1,
@@ -1167,7 +1191,7 @@ static void perform_initialization_sequence(void)
         /* 获取IMSI */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT+CIMI",
+            .at_cmd = "AT+CIMI\r\n",
             .expected_resp = "OK",
             .timeout_ms = 5000,
             .retries = 1,
@@ -1177,7 +1201,7 @@ static void perform_initialization_sequence(void)
         /* 检查SIM卡状态 */
         {
             .module_type = MODULE_TYPE_4G,
-            .at_cmd = "AT+CPIN?",
+            .at_cmd = "AT+CPIN?\r\n",
             .expected_resp = "READY",
             .timeout_ms = 5000,
             .retries = 3,
@@ -1191,7 +1215,7 @@ static void perform_initialization_sequence(void)
     /* 初始化重试循环 */
     while (retry_count < s_init_config.max_retry_count && !init_success) {
         /* 等待模块启动稳定 */
-        vTaskDelay(pdMS_TO_TICKS(3000));
+        // vTaskDelay(pdMS_TO_TICKS(3000));
         
         LOG_INFO(LOG_MODULE_NETWORK, "Initialization attempt %d/%d", 
                 retry_count + 1, s_init_config.max_retry_count);
@@ -1267,7 +1291,10 @@ static void perform_initialization_sequence(void)
 
 
 /* ============================= 任务函数实现 ============================= */
-
+bool get_lte_initialization_status(void)
+{
+    return s_init_completed;
+}
 /**
  * @brief 4G模块初始化任务主函数
  * @param pvParameters 任务参数（未使用）
@@ -1285,7 +1312,7 @@ static void vLteInitTask(void* pvParameters)
     (void)pvParameters;  /* 避免未使用参数警告 */
     TickType_t last_status_check = xTaskGetTickCount();
     
-    LOG_INFO(LOG_MODULE_NETWORK, "Lte 4G initialization task started");
+    LOG_INFO(LOG_MODULE_NETWORK, "Lte 4G initialization task started, free heap: %d", xPortGetFreeHeapSize());
     
     /* 首先执行LTE硬件初始化（在任务中执行，避免阻塞主线程） */
     if (!s_lte_module_hardware_initialized) {
@@ -1295,29 +1322,30 @@ static void vLteInitTask(void* pvParameters)
         LOG_INFO(LOG_MODULE_NETWORK, "LTE module hardware initialized successfully");
     }
 
+    LOG_INFO(LOG_MODULE_NETWORK, "Starting LTE initialization sequence...");
     /* 执行初始化序列 */
-    perform_initialization_sequence();
+    // perform_initialization_sequence();
     
     /* 任务主循环 - 状态监控和维护 */
     while (1) {
-        TickType_t current_time = xTaskGetTickCount();
+        // TickType_t current_time = xTaskGetTickCount();
         
-        /* 定期检查网络状态（仅在模块就绪后） */
-        if ((current_time - last_status_check) >= pdMS_TO_TICKS(STATUS_CHECK_INTERVAL_MS)) {
-            if (s_current_state >= LTE_STATE_READY) {
-                monitor_network_status();  /* 监控网络状态和信号质量 */
-            }
-            last_status_check = current_time;
-        }
+        // /* 定期检查网络状态（仅在模块就绪后） */
+        // if ((current_time - last_status_check) >= pdMS_TO_TICKS(STATUS_CHECK_INTERVAL_MS)) {
+        //     if (s_current_state >= LTE_STATE_READY) {
+        //         monitor_network_status();  /* 监控网络状态和信号质量 */
+        //     }
+        //     last_status_check = current_time;
+        // }
         
-        /* 错误状态自动恢复机制 */
-        if (s_current_state == LTE_STATE_ERROR) {
-            LOG_WARN(LOG_MODULE_NETWORK, "4G module in error state, attempting reinitialize");
-            vTaskDelay(pdMS_TO_TICKS(INIT_RETRY_DELAY_MS));  /* 等待后重试 */
-            perform_initialization_sequence();  /* 重新执行初始化 */
-        }
+        // /* 错误状态自动恢复机制 */
+        // if (s_current_state == LTE_STATE_ERROR) {
+        //     LOG_WARN(LOG_MODULE_NETWORK, "4G module in error state, attempting reinitialize");
+        //     vTaskDelay(pdMS_TO_TICKS(INIT_RETRY_DELAY_MS));  /* 等待后重试 */
+        //     perform_initialization_sequence();  /* 重新执行初始化 */
+        // }
         /* 任务循环延时，避免占用过多CPU资源 */
-        vTaskDelay(pdMS_TO_TICKS(1000));
+        vTaskDelay(pdMS_TO_TICKS(100));
     }
 }
 
@@ -1328,9 +1356,9 @@ static void vLteInitTask(void* pvParameters)
 static void cleanup_resources(uint16_t cleanup_mask)
 {
     /* 清理4G AT响应队列 */
-    if ((cleanup_mask & CLEANUP_AT_QUEUE) && s_lte_to_mcu_queue) {
-        vQueueDelete(s_lte_to_mcu_queue);
-        s_lte_to_mcu_queue = NULL;
+    if ((cleanup_mask & CLEANUP_AT_QUEUE) && s_lte_receive_queue) {
+        vQueueDelete(s_lte_receive_queue);
+        s_lte_receive_queue = NULL;
     }
     
     /* 清理数据接收任务 */
@@ -1372,8 +1400,8 @@ BaseType_t Lte_init(const LteInitConfig_t* config)
     
     
     /* 创建AT响应队列 */
-    s_lte_to_mcu_queue = xQueueCreate(QUEUE_LENGTH, QUEUE_ITEM_SIZE);
-    if (!s_lte_to_mcu_queue) {
+    s_lte_receive_queue = xQueueCreate(QUEUE_LENGTH, QUEUE_ITEM_SIZE);
+    if (!s_lte_receive_queue) {
         LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create 4G AT queue");
         cleanup_resources(CLEANUP_DATA_QUEUE);
         return pdFAIL;
@@ -1409,7 +1437,7 @@ bool LTE_SendDataToMCU(ModuleType_t module_type, const uint8_t* data, uint32_t l
         return false;
     }
     
-    if (!s_lte_to_mcu_queue) {
+    if (!s_lte_receive_queue) {
         LOG_ERROR(LOG_MODULE_NETWORK, "4G AT queue not initialized");
         return false;
     }
@@ -1426,7 +1454,7 @@ bool LTE_SendDataToMCU(ModuleType_t module_type, const uint8_t* data, uint32_t l
     queue_message.header.data_length = copy_length;
     
     /* 发送到队列 */
-    BaseType_t result = xQueueSend(s_lte_to_mcu_queue, &queue_message, pdMS_TO_TICKS(100)); //TODO 该队列在数据处理任务接收
+    BaseType_t result = xQueueSend(s_lte_receive_queue, &queue_message, pdMS_TO_TICKS(100)); //TODO 该队列在数据处理任务接收
     
     if (result == pdPASS) {
         LOG_DEBUG(LOG_MODULE_NETWORK, "Queued %d bytes to 4G data queue", copy_length);
@@ -1441,6 +1469,6 @@ bool LTE_SendDataToMCU(ModuleType_t module_type, const uint8_t* data, uint32_t l
 /*
     通信接收任务 commu_receive      串口数据接收 lte、rs485
     通信发送任务 commu_send         串口数据发送 lte、rs485
-    数据处理任务 data_process       lte接收数据处理，通过s_lte_to_mcu_queue
+    数据处理任务 data_process       lte接收数据处理，通过s_lte_receive_queue
     lte通信任务 lte_commu           进行模块联网
 */
