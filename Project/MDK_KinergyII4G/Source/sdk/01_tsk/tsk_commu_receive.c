@@ -69,7 +69,7 @@ static void process_uart_data(UART_ID_t uart_id)
     uint16_t bytes_to_read;
     
     /* 检查是否有可用数据 */
-    available_bytes = UART_RingBuffer_GetAvailableBytes(uart_id);
+    available_bytes = uart_get_available_bytes(uart_id);
     
     /* 启用LTE串口调试日志 */
     if (uart_id == UART_ID_LTE && available_bytes > 0) {
@@ -83,9 +83,9 @@ static void process_uart_data(UART_ID_t uart_id)
         /* 对于LTE串口，需要在互斥量保护下读取数据 */
         if (uart_id == UART_ID_LTE) {
             /* 尝试获取LTE访问互斥量 */
-            if (AcquireLteAccessMutex(10)) {  /* 短暂超时 */
+            if (acquire_lte_access_mutex(10)) {  /* 短暂超时 */
                 /* 接收数据 */
-                result = UART_RingBuffer_Receive(uart_id, s_rx_buffer, bytes_to_read, 10);
+                result = uart_receive(uart_id, s_rx_buffer, bytes_to_read, 10);
                 
                 if (result == UART_OK) {
                     LOG_DEBUG(LOG_MODULE_PROTOCOL, "LTE shared data content: %.*s", bytes_to_read, s_rx_buffer);
@@ -99,7 +99,7 @@ static void process_uart_data(UART_ID_t uart_id)
                 }
                 
                 /* 释放LTE访问互斥量 */
-                ReleaseLteAccessMutex();
+                release_lte_access_mutex();
             } else {
                 /* 获取互斥量失败，说明4G任务正在执行AT指令，跳过这次处理 */
                 LOG_DEBUG(LOG_MODULE_PROTOCOL, "LTE mutex busy, skipping data read");
@@ -107,7 +107,7 @@ static void process_uart_data(UART_ID_t uart_id)
             }
         } else {
             /* 其他串口正常处理 */
-            result = UART_RingBuffer_Receive(uart_id, s_rx_buffer, bytes_to_read, 10);
+            result = uart_receive(uart_id, s_rx_buffer, bytes_to_read, 10);
         }
         
         if (result == UART_OK) {
@@ -181,13 +181,12 @@ static void handle_received_message(CommuMessage_t* message)
  */
 static void send_response(UART_ID_t uart_id, const char* response)
 {
-    BaseType_t result;
     uint16_t response_len = strlen(response);
     
     if (response_len > 0) {
-        result = CommuSend_UartData(uart_id, (const uint8_t*)response, response_len, 100);
+        UART_Status_t uart_result = uart_send(uart_id, (const uint8_t*)response, response_len, 100);
         
-        if (result != pdPASS) {
+        if (uart_result != UART_OK) {
             LOG_ERROR(LOG_MODULE_PROTOCOL, "Failed to send response via UART%d", uart_id);
         }
     }
@@ -221,7 +220,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
     }
     else if (strncmp(command_buffer, "STATUS", 6) == 0) {
         /* 状态查询命令 */
-        LteState_t module_state = Lte_GetState();
+        LteState_t module_state = lte_get_state();
         snprintf(response, max_response_len, "STATUS:READY,STATE:%d,4G_STATE:%d\r\n", 
                 (int)s_commu_state, (int)module_state);
         return pdTRUE;
@@ -235,7 +234,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         /* 重置命令 */
         snprintf(response, max_response_len, "RESET:OK\r\n");
         /* 发送4G模块软重置命令 */
-        Lte_SoftReset();
+        lte_soft_reset();
         return pdTRUE;
     }
     else if (strncmp(command_buffer, "PING", 4) == 0) {
@@ -247,18 +246,8 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         /* LTE串口测试命令 - 发送AT指令到LTE模块 (转发功能已移除) */
         
         const char* test_cmd = "AT";
-        AT_Cmd_Config_t at_cfg = {
-            .module_type = MODULE_TYPE_4G,
-            .at_cmd = test_cmd,
-            .expected_resp = NULL,
-            .timeout_ms = 1000,
-            .retries = 0,
-            .description = "LTE Test",
-            .critical = false,
-            .callback = NULL
-        };
-        BaseType_t result = CommuSend_LTECommand(&at_cfg);
-        if (result == pdPASS) {
+        UART_Status_t result = uart_send(UART_ID_LTE, (const uint8_t*)test_cmd, strlen(test_cmd), 1000);
+        if (result == UART_OK) {
             snprintf(response, max_response_len, "LTE_TEST_SENT\r\n");
         } else {
             snprintf(response, max_response_len, "LTE_TEST_ERROR:%d\r\n", result);
@@ -267,7 +256,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
     }
     else if (strncmp(command_buffer, "4G_STATUS", 9) == 0) {
         /* 4G模块状态查询 */
-        LteState_t state = Lte_GetState();
+        LteState_t state = lte_get_state();
         bool init_status = get_lte_initialization_status();
         snprintf(response, max_response_len, "4G_STATE:%d,INIT_STATUS:%s\r\n", 
                 (int)state, init_status ? "TRUE" : "FALSE");
@@ -275,7 +264,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
     }
     else if (strncmp(command_buffer, "4G_INIT", 7) == 0) {
         /* 强制4G模块初始化 */
-        BaseType_t result = Lte_Reinitialize();
+        BaseType_t result = lte_reinitialize();
         if (result == pdPASS) {
             snprintf(response, max_response_len, "4G_INIT_STARTED\r\n");
         } else {
@@ -285,8 +274,8 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
     }
     else if (strncmp(command_buffer, "LTE_CLEAR", 9) == 0) {
         /* 清空LTE缓冲区和统计数据 */
-        UART_RingBuffer_FlushRx(UART_ID_LTE);
-        UART_RingBuffer_FlushTx(UART_ID_LTE);
+        uart_flush_rx(UART_ID_LTE);
+        uart_flush_tx(UART_ID_LTE);
         snprintf(response, max_response_len, "LTE_BUFFERS_CLEARED\r\n");
         return pdTRUE;
     }
@@ -294,7 +283,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         /* 发送多个AT命令尝试唤醒模块 */
         const char* wakeup_cmd = "AT\r\n";
         for (int i = 0; i < 3; i++) {
-            CommuSend_UartData(UART_ID_LTE, (const uint8_t*)wakeup_cmd, 4, 1000);
+            uart_send(UART_ID_LTE, (const uint8_t*)wakeup_cmd, 4, 1000);
             vTaskDelay(pdMS_TO_TICKS(500)); // 等待500ms
         }
         snprintf(response, max_response_len, "4G_WAKEUP_SENT\r\n");
@@ -310,7 +299,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         
         for (int i = 0; i < 3; i++) {
             LOG_INFO(LOG_MODULE_PROTOCOL, "Sending test pattern %d", i);
-            CommuSend_UartData(UART_ID_LTE, test_patterns[i], strlen((char*)test_patterns[i]), 1000);
+            uart_send(UART_ID_LTE, test_patterns[i], strlen((char*)test_patterns[i]), 1000);
             vTaskDelay(pdMS_TO_TICKS(1000)); // 等待1秒
         }
         snprintf(response, max_response_len, "4G_RAWTEST_SENT\r\n");
@@ -323,7 +312,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         
         // 发送同步字符
         const uint8_t sync_pattern[] = {0x55, 0x55, 0x55, 0x41, 0x54, 0x0D, 0x0A}; // 同步 + AT
-        CommuSend_UartData(UART_ID_LTE, sync_pattern, sizeof(sync_pattern), 1000);
+        uart_send(UART_ID_LTE, sync_pattern, sizeof(sync_pattern), 1000);
         
         snprintf(response, max_response_len, "4G_BAUD_TEST_SENT\r\n");
         return pdTRUE;
@@ -332,15 +321,15 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         /* 监控4G模块是否发送任何数据 */
         LOG_INFO(LOG_MODULE_PROTOCOL, "Starting 10-second monitoring of LTE UART...");
         
-        uint32_t start_irq = UART_RingBuffer_GetLteIrqCount();
+        uint32_t start_irq = uart_get_lte_irq_count();
         uint32_t start_write_ok, start_write_fail;
-        UART_RingBuffer_GetLteWriteStats(&start_write_ok, &start_write_fail);
+        uart_get_lte_write_stats(&start_write_ok, &start_write_fail);
         
         // 等待10秒并检查是否有新数据
         for (int i = 0; i < 10; i++) {
             vTaskDelay(pdMS_TO_TICKS(1000));
-            uint32_t current_irq = UART_RingBuffer_GetLteIrqCount();
-            uint32_t available = UART_RingBuffer_GetAvailableBytes(UART_ID_LTE);
+            uint32_t current_irq = uart_get_lte_irq_count();
+            uint32_t available = uart_get_available_bytes(UART_ID_LTE);
             
             if (current_irq > start_irq || available > 0) {
                 LOG_INFO(LOG_MODULE_PROTOCOL, "Activity detected at second %d: IRQ=%d, AVAIL=%d", 
@@ -349,8 +338,8 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
             }
         }
         
-        uint32_t end_irq = UART_RingBuffer_GetLteIrqCount();
-        uint32_t final_available = UART_RingBuffer_GetAvailableBytes(UART_ID_LTE);
+        uint32_t end_irq = uart_get_lte_irq_count();
+        uint32_t final_available = uart_get_available_bytes(UART_ID_LTE);
         
         snprintf(response, max_response_len, "4G_MONITOR_DONE:IRQ_CHANGE=%d,FINAL_AVAIL=%d\r\n", 
                  end_irq - start_irq, final_available);
@@ -414,14 +403,14 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
     }
     else if (strncmp(command_buffer, "LTE_STATUS", 10) == 0) {
         /* LTE串口状态查询 */
-        uint32_t available = UART_RingBuffer_GetAvailableBytes(UART_ID_LTE);
-        uint32_t irq_count = UART_RingBuffer_GetLteIrqCount();
-        uint32_t send_count = UART_RingBuffer_GetLteSendCount();
+        uint32_t available = uart_get_available_bytes(UART_ID_LTE);
+        uint32_t irq_count = uart_get_lte_irq_count();
+        uint32_t send_count = uart_get_lte_send_count();
         uint32_t write_ok, write_fail;
-        UART_RingBuffer_GetLteWriteStats(&write_ok, &write_fail);
+        uart_get_lte_write_stats(&write_ok, &write_fail);
         
         uint8_t debug_data[8];
-        uint32_t debug_len = UART_RingBuffer_GetLteDebugData(debug_data);
+        uint32_t debug_len = uart_get_lte_debug_data(debug_data);
         
         snprintf(response, max_response_len, "LTE_AVAIL:%d,IRQ:%d,SEND:%d,WR_OK:%d,WR_FAIL:%d,DATA:[", 
                 available, irq_count, send_count, write_ok, write_fail);
@@ -449,13 +438,13 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
     }
     else if (strncmp(command_buffer, "LTE_READ", 8) == 0) {
         /* 直接从LTE缓冲区读取数据进行测试 - 仅在4G任务不活跃时使用 */
-        if (AcquireLteAccessMutex(100)) {
+        if (acquire_lte_access_mutex(100)) {
             uint8_t test_buffer[64];
-            uint32_t available = UART_RingBuffer_GetAvailableBytes(UART_ID_LTE);
+            uint32_t available = uart_get_available_bytes(UART_ID_LTE);
             
             if (available > 0) {
                 uint16_t bytes_to_read = (available > sizeof(test_buffer)) ? sizeof(test_buffer) : available;
-                UART_Status_t result = UART_RingBuffer_Receive(UART_ID_LTE, test_buffer, bytes_to_read, 100);
+                UART_Status_t result = uart_receive(UART_ID_LTE, test_buffer, bytes_to_read, 100);
                 
                 if (result == UART_OK) {
                     snprintf(response, max_response_len, "LTE_READ_SUCCESS:%d bytes,[", bytes_to_read);
@@ -484,7 +473,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
             } else {
                 snprintf(response, max_response_len, "LTE_READ_EMPTY\r\n");
             }
-            ReleaseLteAccessMutex();
+            release_lte_access_mutex();
         } else {
             snprintf(response, max_response_len, "LTE_READ_MUTEX_FAILED\r\n");
         }
@@ -494,9 +483,9 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         /* 检查所有UART状态 */
         LOG_INFO(LOG_MODULE_PROTOCOL, "Checking all UART status");
         
-        uint32_t lte_available = UART_RingBuffer_GetAvailableBytes(UART_ID_LTE);
-        uint32_t rs485_available = UART_RingBuffer_GetAvailableBytes(UART_ID_RS485);
-        uint32_t log_available = UART_RingBuffer_GetAvailableBytes(UART_ID_LOG);
+        uint32_t lte_available = uart_get_available_bytes(UART_ID_LTE);
+        uint32_t rs485_available = uart_get_available_bytes(UART_ID_RS485);
+        uint32_t log_available = uart_get_available_bytes(UART_ID_LOG);
         
         snprintf(response, max_response_len, "UART_STATUS:LTE=%d,RS485=%d,LOG=%d\r\n",
                  (int)lte_available, (int)rs485_available, (int)log_available);
@@ -509,23 +498,11 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
             ble_cmd++; // 跳过逗号
             LOG_INFO(LOG_MODULE_PROTOCOL, "Extracted BLE command: [%s]", ble_cmd);
             
-            /* 构建BLE AT指令配置 */
-            AT_Cmd_Config_t ble_cfg = {
-                .module_type = MODULE_TYPE_BLE,
-                .at_cmd = ble_cmd,
-                .expected_resp = "OK",
-                .timeout_ms = 3000,
-                .retries = 1,
-                .description = "BLE Command",
-                .critical = false,
-                .callback = NULL
-            };
-            
             LOG_INFO(LOG_MODULE_PROTOCOL, "Executing BLE command: %s", ble_cmd);
             
-            BaseType_t result = CommuSend_LTECommand(&ble_cfg);
+            UART_Status_t result = uart_send(UART_ID_LTE, (const uint8_t*)ble_cmd, strlen(ble_cmd), 3000);
             
-            if (result == pdPASS) {
+            if (result == UART_OK) {
                 snprintf(response, max_response_len, "BLE_CMD_SENT_OK\r\n");
             } else {
                 snprintf(response, max_response_len, "BLE_CMD_SEND_ERROR\r\n");
@@ -606,19 +583,9 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
                 LOG_INFO(LOG_MODULE_PROTOCOL, "Using simplified send for query command: %s", at_cmd);
                 
                 /* 直接发送命令，不等待响应 */
-                AT_Cmd_Config_t at_cfg = {
-                    .module_type = MODULE_TYPE_4G,
-                    .at_cmd = full_at_cmd,  // 使用带结束符的完整命令
-                    .expected_resp = NULL,
-                    .timeout_ms = 1000,
-                    .retries = 0,
-                    .description = "Query Command",
-                    .critical = false,
-                    .callback = NULL
-                };
-                BaseType_t uart_result = CommuSend_LTECommand(&at_cfg);
+                UART_Status_t uart_result = uart_send(UART_ID_LTE, (const uint8_t*)full_at_cmd, strlen(full_at_cmd), 1000);
                 
-                if (uart_result == pdPASS) {
+                if (uart_result == UART_OK) {
                     LOG_INFO(LOG_MODULE_PROTOCOL, "AT command sent successfully: %s", full_at_cmd);
                     snprintf(response, max_response_len, "4G_CMD_SENT_OK\r\n");
                 } else {
@@ -637,7 +604,6 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
                 .expected_resp = "OK",
                 .timeout_ms = 2000,
                 .retries = 0,
-                .description = "User AT Command",
                 .critical = false,
                 .callback = NULL
             };
@@ -649,7 +615,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
             TickType_t start_tick = xTaskGetTickCount();
             
             /* 执行4G AT命令 */
-            AT_Result_t result = Lte_ExecuteAtCommand(&cmd_config);
+            AT_Result_t result = at_exec(&cmd_config);
             
             /* 计算执行时间 */
             TickType_t end_tick = xTaskGetTickCount();
@@ -675,7 +641,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
         if (rs485_data) {
             rs485_data++; // 跳过逗号
             /* 发送RS485数据 */
-            CommuSend_Rs485Data((const uint8_t*)rs485_data, strlen(rs485_data));
+            uart_send(UART_ID_RS485, (const uint8_t*)rs485_data, strlen(rs485_data), 1000);
             snprintf(response, max_response_len, "RS485_SENT\r\n");
             return pdTRUE;
         }
@@ -691,7 +657,7 @@ static BaseType_t parse_command(const uint8_t* data, uint16_t length, char* resp
  * @brief 获取通信接收任务当前状态
  * @return 当前状态
  */
-CommuState_t CommuReceive_GetState(void)
+CommuState_t commu_receive_get_state(void)
 {
     return s_commu_state;
 }
@@ -838,7 +804,7 @@ static bool lte_receive_data_to_mcu(const uint8_t* data, size_t length)
     switch (module_type) {
         case MODULE_TYPE_4G:
         case MODULE_TYPE_BLE:
-            if (LTE_SendDataToMCU(module_type, data, length)) 
+            if (lte_send_data_to_mcu(module_type, data, length)) 
             {
                 result = true;
             }
@@ -892,7 +858,7 @@ void vCommuReceiveTask(void* pvParameters)
  * @brief 初始化通信接收任务
  * @return BaseType_t 初始化结果
  */
-BaseType_t CommuReceive_Init(void)
+BaseType_t commu_receive_init(void)
 {
     BaseType_t result;
     

@@ -38,18 +38,18 @@ typedef struct
 } RingBuffer_t;
 
 // --- 公共API ---
-RB_Status RingBuffer_Init(RingBuffer_t* rb, uint8_t* buffer, uint32_t capacity, uint32_t element_size);
-RB_Status RingBuffer_Deinit(RingBuffer_t* rb);
-RB_Status RingBuffer_Write(RingBuffer_t* rb, const void* data);
-RB_Status RingBuffer_Read(RingBuffer_t* rb, void* data);
-RB_Status RingBuffer_ReadFromISR(RingBuffer_t* rb, void* data);
-RB_Status RingBuffer_WriteFromISR(RingBuffer_t* rb, const void* data, void* xHigherPriorityTaskWoken);
-void RingBuffer_Clear(RingBuffer_t* rb);
-size_t RingBuffer_Peek(RingBuffer_t* rb, uint8_t* dest, size_t max_len);
-size_t RingBuffer_ReadMulti(RingBuffer_t* rb, uint8_t* dest, size_t len);
-void RingBuffer_Drop(RingBuffer_t* rb, size_t len);
-bool RingBuffer_IsFull(const RingBuffer_t* rb);
-bool RingBuffer_IsEmpty(const RingBuffer_t* rb);
-bool RingBuffer_IsAvailable(const RingBuffer_t* rb);
+RB_Status ring_buffer_init(RingBuffer_t* rb, uint8_t* buffer, uint32_t capacity, uint32_t element_size);
+RB_Status ring_buffer_deinit(RingBuffer_t* rb);
+RB_Status ring_buffer_write(RingBuffer_t* rb, const void* data);
+RB_Status ring_buffer_read(RingBuffer_t* rb, void* data);
+RB_Status ring_buffer_read_from_isr(RingBuffer_t* rb, void* data);
+RB_Status ring_buffer_write_from_isr(RingBuffer_t* rb, const void* data, void* xHigherPriorityTaskWoken);
+void ring_buffer_clear(RingBuffer_t* rb);
+size_t ring_buffer_peek(RingBuffer_t* rb, uint8_t* dest, size_t max_len);
+size_t ring_buffer_read_multi(RingBuffer_t* rb, uint8_t* dest, size_t len);
+void ring_buffer_drop(RingBuffer_t* rb, size_t len);
+bool ring_buffer_is_full(const RingBuffer_t* rb);
+bool ring_buffer_is_empty(const RingBuffer_t* rb);
+bool ring_buffer_is_available(const RingBuffer_t* rb);
 
 #endif /* RING_BUFFER_H */

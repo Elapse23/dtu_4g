@@ -133,10 +133,10 @@ static int format_file_line(char* buffer, size_t size, const char* file, int lin
  */
 static void output_to_uart(const char* message) {
     // 使用较长的超时时间确保完整发送
-    UART_Status_t status = UART_RingBuffer_SendString(UART_ID_LOG, message, 1000);
+    UART_Status_t status = uart_send(UART_ID_LOG, (const uint8_t*)message, strlen(message), 1000);
     if (status != UART_OK) {
         // 如果发送失败，尝试再次发送
-        status = UART_RingBuffer_SendString(UART_ID_LOG, message, 2000);
+        status = uart_send(UART_ID_LOG, (const uint8_t*)message, strlen(message), 2000);
     }
 }
 
@@ -195,7 +195,7 @@ bool LogManager_Init(const LogConfig_t* config) {
     }
     
     // 初始化LOG串口
-    if (UART_RingBuffer_Init(UART_ID_LOG, 115200) != UART_OK) {
+    if (uart_init(UART_ID_LOG, 115200) != UART_OK) {
         vSemaphoreDelete(g_log_manager.mutex);
         g_log_manager.mutex = NULL;
         return false;
@@ -227,7 +227,7 @@ void LogManager_Deinit(void) {
     LogManager_Flush();
     
     // 反初始化串口
-    UART_RingBuffer_Deinit(UART_ID_LOG);
+    uart_deinit(UART_ID_LOG);
     
     // 删除互斥锁
     if (g_log_manager.mutex) {

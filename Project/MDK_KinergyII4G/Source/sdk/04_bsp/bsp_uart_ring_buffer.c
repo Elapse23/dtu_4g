@@ -46,62 +46,21 @@ static uint32_t s_lte_debug_index = 0; // 调试数据索引
 static UART_RingBuffer_t uart_devices[UART_COUNT];
 
 // 内部函数声明
-static Serial_Status_t init_uart_hardware(void* uart_instance, uint32_t baudrate);
-static Serial_Status_t deinit_uart_hardware(void* uart_instance);
-static UART_RingBuffer_t* get_uart_device(UART_ID_t uart_id);
-static UART_Status_t UART_RingBuffer_SendPolling(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms);
+static inline UART_RingBuffer_t* get_uart_device(UART_ID_t uart_id);
+static UART_Status_t send_polling(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms);
 
-/**
- * @brief 初始化串口硬件（适配现有驱动）
- * @param uart_instance UART实例
- * @param baudrate 波特率
- * @return 初始化状态
- */
-static Serial_Status_t init_uart_hardware(void* uart_instance, uint32_t baudrate) {
-    if (uart_instance == RS485_UART) {
-        return Serial_Driver_Init(RS485_UART, baudrate);
-    } else if (uart_instance == LTE_UART) {
-        return Serial_Driver_Init(LTE_UART, baudrate);
-    } else if (uart_instance == LOG_UART) {
-        return Serial_Driver_Init(LOG_UART, baudrate);
-    }
-    return SERIAL_ERR_PARAM;
-}
 
-/**
- * @brief 反初始化串口硬件（适配现有驱动）
- * @param uart_instance UART实例
- * @return 状态
- */
-static Serial_Status_t deinit_uart_hardware(void* uart_instance) {
-    if (uart_instance == RS485_UART) {
-        return Serial_Driver_Deinit(RS485_UART);
-    } else if (uart_instance == LTE_UART) {
-        return Serial_Driver_Deinit(LTE_UART);
-    } else if (uart_instance == LOG_UART) {
-        return Serial_Driver_Deinit(LOG_UART);
-    }
-    return SERIAL_ERR_PARAM;
-}
 /**
  * @brief 获取串口设备实例
- * @param uart_id 串口ID
- * @return 串口设备指针，失败返回NULL
  */
-static UART_RingBuffer_t* get_uart_device(UART_ID_t uart_id) {
-    if (uart_id >= UART_COUNT) {
-        return NULL;
-    }
-    return &uart_devices[uart_id];
+static inline UART_RingBuffer_t* get_uart_device(UART_ID_t uart_id) {
+    return (uart_id < UART_COUNT) ? &uart_devices[uart_id] : NULL;
 }
 
 /**
  * @brief 初始化串口环形缓冲区驱动
- * @param uart_id 串口ID
- * @param baudrate 波特率
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_Init(UART_ID_t uart_id, uint32_t baudrate) {
+UART_Status_t uart_init(UART_ID_t uart_id, uint32_t baudrate) {
     if (uart_id >= UART_COUNT) {
         return UART_ERR_PARAM;
     }
@@ -140,7 +99,7 @@ UART_Status_t UART_RingBuffer_Init(UART_ID_t uart_id, uint32_t baudrate) {
     uart_dev->is_initialized = false;
     
     // 初始化接收环形缓冲区
-    if (RingBuffer_Init(&uart_dev->rx_ring_buffer, 
+    if (ring_buffer_init(&uart_dev->rx_ring_buffer, 
                        uart_dev->rx_buffer_storage,
                        UART_RX_BUFFER_SIZE,
                        sizeof(uint8_t)) != RB_OK) {
@@ -148,19 +107,19 @@ UART_Status_t UART_RingBuffer_Init(UART_ID_t uart_id, uint32_t baudrate) {
     }
     
     // 初始化发送环形缓冲区
-    if (RingBuffer_Init(&uart_dev->tx_ring_buffer,
+    if (ring_buffer_init(&uart_dev->tx_ring_buffer,
                        uart_dev->tx_buffer_storage,
                        UART_TX_BUFFER_SIZE,
                        sizeof(uint8_t)) != RB_OK) {
-        RingBuffer_Deinit(&uart_dev->rx_ring_buffer);
+        ring_buffer_deinit(&uart_dev->rx_ring_buffer);
         return UART_ERR_INIT;
     }
     
     // 创建互斥锁
     uart_dev->tx_mutex = xSemaphoreCreateMutex();
     if (!uart_dev->tx_mutex) {
-        RingBuffer_Deinit(&uart_dev->rx_ring_buffer);
-        RingBuffer_Deinit(&uart_dev->tx_ring_buffer);
+        ring_buffer_deinit(&uart_dev->rx_ring_buffer);
+        ring_buffer_deinit(&uart_dev->tx_ring_buffer);
         return UART_ERR_INIT;
     }
     
@@ -168,8 +127,8 @@ UART_Status_t UART_RingBuffer_Init(UART_ID_t uart_id, uint32_t baudrate) {
     uart_dev->rx_semaphore = xSemaphoreCreateBinary();
     if (!uart_dev->rx_semaphore) {
         vSemaphoreDelete(uart_dev->tx_mutex);
-        RingBuffer_Deinit(&uart_dev->rx_ring_buffer);
-        RingBuffer_Deinit(&uart_dev->tx_ring_buffer);
+        ring_buffer_deinit(&uart_dev->rx_ring_buffer);
+        ring_buffer_deinit(&uart_dev->tx_ring_buffer);
         return UART_ERR_INIT;
     }
     
@@ -178,18 +137,18 @@ UART_Status_t UART_RingBuffer_Init(UART_ID_t uart_id, uint32_t baudrate) {
     if (!uart_dev->tx_complete_semaphore) {
         vSemaphoreDelete(uart_dev->tx_mutex);
         vSemaphoreDelete(uart_dev->rx_semaphore);
-        RingBuffer_Deinit(&uart_dev->rx_ring_buffer);
-        RingBuffer_Deinit(&uart_dev->tx_ring_buffer);
+        ring_buffer_deinit(&uart_dev->rx_ring_buffer);
+        ring_buffer_deinit(&uart_dev->tx_ring_buffer);
         return UART_ERR_INIT;
     }
     
-    // 调用适配的硬件初始化函数
-    if (init_uart_hardware(uart_dev->uart_instance, baudrate) != SERIAL_OK) {
+    // 直接调用底层驱动初始化
+    if (Serial_Driver_Init(uart_dev->uart_instance, baudrate) != SERIAL_OK) {
         vSemaphoreDelete(uart_dev->tx_mutex);
         vSemaphoreDelete(uart_dev->rx_semaphore);
         vSemaphoreDelete(uart_dev->tx_complete_semaphore);
-        RingBuffer_Deinit(&uart_dev->rx_ring_buffer);
-        RingBuffer_Deinit(&uart_dev->tx_ring_buffer);
+        ring_buffer_deinit(&uart_dev->rx_ring_buffer);
+        ring_buffer_deinit(&uart_dev->tx_ring_buffer);
         return UART_ERR_INIT;
     }
     
@@ -199,17 +158,15 @@ UART_Status_t UART_RingBuffer_Init(UART_ID_t uart_id, uint32_t baudrate) {
 
 /**
  * @brief 反初始化串口环形缓冲区驱动
- * @param uart_id 串口ID
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_Deinit(UART_ID_t uart_id) {
+UART_Status_t uart_deinit(UART_ID_t uart_id) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     if (!uart_dev || !uart_dev->is_initialized) {
         return UART_ERR_PARAM;
     }
     
-    // 反初始化硬件
-    deinit_uart_hardware(uart_dev->uart_instance);
+    // 直接调用底层驱动反初始化
+    Serial_Driver_Deinit(uart_dev->uart_instance);
     
     // 清理资源
     if (uart_dev->tx_mutex) {
@@ -227,8 +184,8 @@ UART_Status_t UART_RingBuffer_Deinit(UART_ID_t uart_id) {
         uart_dev->tx_complete_semaphore = NULL;
     }
     
-    RingBuffer_Deinit(&uart_dev->rx_ring_buffer);
-    RingBuffer_Deinit(&uart_dev->tx_ring_buffer);
+    ring_buffer_deinit(&uart_dev->rx_ring_buffer);
+    ring_buffer_deinit(&uart_dev->tx_ring_buffer);
     
     uart_dev->is_initialized = false;
     return UART_OK;
@@ -236,13 +193,8 @@ UART_Status_t UART_RingBuffer_Deinit(UART_ID_t uart_id) {
 
 /**
  * @brief 发送数据（阻塞方式）
- * @param uart_id 串口ID
- * @param data 要发送的数据
- * @param length 数据长度
- * @param timeout_ms 超时时间（毫秒）
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms) {
+UART_Status_t uart_send(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) {
         return UART_ERR_PARAM;
@@ -256,7 +208,7 @@ UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint3
     BaseType_t scheduler_state = xTaskGetSchedulerState();
     if (scheduler_state == taskSCHEDULER_NOT_STARTED) {
         // 调度器未启动，使用轮询方式发送
-        return UART_RingBuffer_SendPolling(uart_id, data, length, timeout_ms);
+        return send_polling(uart_id, data, length, timeout_ms);
     } else if (scheduler_state != taskSCHEDULER_RUNNING) {
         return UART_ERR_INIT;
     }
@@ -290,7 +242,7 @@ UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint3
         // 如果启用了LTE监控，将数据同步发送到LOG串口
         if (s_lte_monitor_enabled) {
             // 发送数据到LOG串口 - 使用轮询方式避免任务切换
-            UART_RingBuffer_SendPolling(UART_ID_LOG, data, length, 1000);
+            send_polling(UART_ID_LOG, data, length, 1000);
         }
     }
     
@@ -318,13 +270,8 @@ UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint3
 
 /**
  * @brief 轮询方式发送数据（用于调度器未启动时）
- * @param uart_id 串口ID
- * @param data 要发送的数据
- * @param length 数据长度
- * @param timeout_ms 超时时间（毫秒）
- * @return UART_Status_t 状态码
  */
-static UART_Status_t UART_RingBuffer_SendPolling(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms) {
+static UART_Status_t send_polling(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) {
         return UART_ERR_PARAM;
@@ -375,13 +322,8 @@ static UART_Status_t UART_RingBuffer_SendPolling(UART_ID_t uart_id, const uint8_
 
 /**
  * @brief 接收数据（阻塞方式）
- * @param uart_id 串口ID
- * @param data 接收数据缓冲区
- * @param length 期望接收的字节数
- * @param timeout_ms 超时时间（毫秒）
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_Receive(UART_ID_t uart_id, uint8_t* data, uint32_t length, uint32_t timeout_ms) {
+UART_Status_t uart_receive(UART_ID_t uart_id, uint8_t* data, uint32_t length, uint32_t timeout_ms) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) {
         return UART_ERR_PARAM;
@@ -393,7 +335,7 @@ UART_Status_t UART_RingBuffer_Receive(UART_ID_t uart_id, uint8_t* data, uint32_t
     
     while (received < length) {
         // 尝试从环形缓冲区读取数据
-        if (RingBuffer_Read(&uart_dev->rx_ring_buffer, &data[received]) == RB_OK) {
+        if (ring_buffer_read(&uart_dev->rx_ring_buffer, &data[received]) == RB_OK) {
             received++;
         } else {
             // 没有数据，等待接收信号量
@@ -414,17 +356,14 @@ UART_Status_t UART_RingBuffer_Receive(UART_ID_t uart_id, uint8_t* data, uint32_t
 
 /**
  * @brief 非阻塞读取一个字节
- * @param uart_id 串口ID
- * @param data 存储字节的指针
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_ReadByte(UART_ID_t uart_id, uint8_t* data) {
+UART_Status_t uart_read_byte(UART_ID_t uart_id, uint8_t* data) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     if (!uart_dev || !uart_dev->is_initialized || !data) {
         return UART_ERR_PARAM;
     }
     
-    if (RingBuffer_Read(&uart_dev->rx_ring_buffer, data) == RB_OK) {
+    if (ring_buffer_read(&uart_dev->rx_ring_buffer, data) == RB_OK) {
         return UART_OK;
     }
     
@@ -432,37 +371,17 @@ UART_Status_t UART_RingBuffer_ReadByte(UART_ID_t uart_id, uint8_t* data) {
 }
 
 /**
- * @brief 获取LTE中断调试信息
- * @return 中断接收计数
+ * @brief LTE调试统计信息获取
  */
-uint32_t UART_RingBuffer_GetLteIrqCount(void) {
-    return s_lte_irq_count;
-}
+uint32_t uart_get_lte_irq_count(void) { return s_lte_irq_count; }
+uint32_t uart_get_lte_send_count(void) { return s_lte_send_count; }
 
-/**
- * @brief 获取LTE发送字节计数
- * @return 发送字节计数
- */
-uint32_t UART_RingBuffer_GetLteSendCount(void) {
-    return s_lte_send_count;
-}
-
-/**
- * @brief 获取LTE环形缓冲区写入统计
- * @param write_ok 成功写入计数指针
- * @param write_fail 失败写入计数指针
- */
-void UART_RingBuffer_GetLteWriteStats(uint32_t* write_ok, uint32_t* write_fail) {
+void uart_get_lte_write_stats(uint32_t* write_ok, uint32_t* write_fail) {
     if (write_ok) *write_ok = s_lte_write_ok_count;
     if (write_fail) *write_fail = s_lte_write_fail_count;
 }
 
-/**
- * @brief 获取LTE最近接收的调试数据
- * @param debug_data 输出缓冲区(至少8字节)
- * @return 实际数据长度
- */
-uint32_t UART_RingBuffer_GetLteDebugData(uint8_t* debug_data) {
+uint32_t uart_get_lte_debug_data(uint8_t* debug_data) {
     if (debug_data && s_lte_write_ok_count > 0) {
         memcpy(debug_data, s_lte_debug_bytes, 8);
         return (s_lte_write_ok_count > 8) ? 8 : s_lte_write_ok_count;
@@ -472,61 +391,42 @@ uint32_t UART_RingBuffer_GetLteDebugData(uint8_t* debug_data) {
 
 /**
  * @brief 获取接收缓冲区中可读取的字节数
- * @param uart_id 串口ID
- * @return 可读取的字节数，错误返回0
  */
-uint32_t UART_RingBuffer_GetAvailableBytes(UART_ID_t uart_id) {
+uint32_t uart_get_available_bytes(UART_ID_t uart_id) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
-    if (!uart_dev || !uart_dev->is_initialized) {
-        return 0;
-    }
-    
-    return uart_dev->rx_ring_buffer.count;
+    return (uart_dev && uart_dev->is_initialized) ? uart_dev->rx_ring_buffer.count : 0;
 }
 
 /**
  * @brief 清空接收缓冲区
- * @param uart_id 串口ID
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_FlushRx(UART_ID_t uart_id) {
+UART_Status_t uart_flush_rx(UART_ID_t uart_id) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     if (!uart_dev || !uart_dev->is_initialized) {
         return UART_ERR_PARAM;
     }
     
-    /* 先清空环形缓冲区逻辑状态 */
-    RingBuffer_Clear(&uart_dev->rx_ring_buffer);
-    
-    /* 可选：物理清空缓冲区数据（如果需要确保数据真的被清除） */
-    memset(uart_dev->rx_buffer_storage, 0, UART_RX_BUFFER_SIZE * (uart_id == UART_ID_LTE ? 5 : 1));
-    
+    ring_buffer_clear(&uart_dev->rx_ring_buffer);
     return UART_OK;
 }
 
 /**
  * @brief 清空发送缓冲区
- * @param uart_id 串口ID
- * @return UART_Status_t 状态码
- * @note 当前使用直接轮询发送，此函数主要用于兼容性
  */
-UART_Status_t UART_RingBuffer_FlushTx(UART_ID_t uart_id) {
+UART_Status_t uart_flush_tx(UART_ID_t uart_id) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     if (!uart_dev || !uart_dev->is_initialized) {
         return UART_ERR_PARAM;
     }
     
-    // 注意：由于使用直接轮询发送，发送缓冲区通常为空
-    // 这里清空缓冲区主要用于兼容性
-    RingBuffer_Clear(&uart_dev->tx_ring_buffer);
+    ring_buffer_clear(&uart_dev->tx_ring_buffer);
     return UART_OK;
 }
 
 /**
- * @brief 串口中断处理函数（在具体的IRQHandler中调用）
- * @param uart_id 串口ID
+ * @brief 串口中断处理函数
  */
-void UART_RingBuffer_IRQHandler(UART_ID_t uart_id) {
+void uart_irq_handler(UART_ID_t uart_id) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     if (!uart_dev || !uart_dev->is_initialized) {
         return;
@@ -545,7 +445,7 @@ void UART_RingBuffer_IRQHandler(UART_ID_t uart_id) {
         }
         
         // 将接收到的字节写入环形缓冲区
-        RB_Status rb_result = RingBuffer_WriteFromISR(&uart_dev->rx_ring_buffer, &received_byte, &xHigherPriorityTaskWoken);
+        RB_Status rb_result = ring_buffer_write_from_isr(&uart_dev->rx_ring_buffer, &received_byte, &xHigherPriorityTaskWoken);
         if (rb_result == RB_OK) {
             // 写入成功
             if (uart_id == UART_ID_LTE) {
@@ -568,48 +468,6 @@ void UART_RingBuffer_IRQHandler(UART_ID_t uart_id) {
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-/**
- * @brief 发送字符串
- * @param uart_id 串口ID
- * @param str 要发送的字符串
- * @param timeout_ms 超时时间（毫秒）
- * @return UART_Status_t 状态码
- */
-UART_Status_t UART_RingBuffer_SendString(UART_ID_t uart_id, const char* str, uint32_t timeout_ms) {
-    if (!str) {
-        return UART_ERR_PARAM;
-    }
-    
-    uint32_t length = strlen(str);
-    
-    return UART_RingBuffer_Send(uart_id, (const uint8_t*)str, length, timeout_ms);
-}
 
-/**
- * @brief 格式化发送（类似printf）
- * @param uart_id 串口ID
- * @param timeout_ms 超时时间（毫秒）
- * @param format 格式字符串
- * @param ... 可变参数
- * @return UART_Status_t 状态码
- */
-UART_Status_t UART_RingBuffer_Printf(UART_ID_t uart_id, uint32_t timeout_ms, const char* format, ...) {
-    if (!format) {
-        return UART_ERR_PARAM;
-    }
-    
-    char buffer[UART_PRINTF_BUFFER_SIZE];
-    va_list args;
-    
-    va_start(args, format);
-    int length = vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args);
-    
-    if (length < 0 || length >= sizeof(buffer)) {
-        return UART_ERR_PARAM;
-    }
-    
-    return UART_RingBuffer_Send(uart_id, (const uint8_t*)buffer, length, timeout_ms);
-}
 
 // (原转发控制API已移除)

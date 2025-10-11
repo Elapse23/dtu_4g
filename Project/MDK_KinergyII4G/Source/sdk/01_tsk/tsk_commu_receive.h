@@ -62,7 +62,7 @@ typedef struct {
  * @return BaseType_t 初始化结果 (pdPASS/pdFAIL)
  * @note 创建通信接收处理任务
  */
-BaseType_t CommuReceive_Init(void);
+BaseType_t commu_receive_init(void);
 
 /**
  * @brief 通信接收任务主函数
@@ -76,7 +76,7 @@ void vCommuReceiveTask(void* pvParameters);
  * @brief 获取通信接收任务当前状态
  * @return 当前状态
  */
-CommuState_t CommuReceive_GetState(void);
+CommuState_t commu_receive_get_state(void);
 
 /* 全局变量声明 */
 extern bool s_lte_monitor_enabled;  /* LTE数据监控标志 - 控制是否将LTE发送的数据镜像到LOG串口 */

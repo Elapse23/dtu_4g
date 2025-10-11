@@ -92,6 +92,55 @@ typedef enum {
 } CommandType_t;
 
 /**
+ * @brief AT指令枚举定义
+ * @note 每个枚举值对应at_cmd_seq数组中的一个元素
+ */
+typedef enum {
+    AT_CMD_WAIT_RDY = 0,           /**< 等待模块准备就绪信号 */
+    AT_CMD_BASIC_TEST,             /**< 基本通信测试 */
+    AT_CMD_SET_ECHO,               /**< 设置回显模式 */
+    AT_CMD_SET_FULL_FUNC,          /**< 设置全功能模式 */
+    AT_CMD_GET_VERSION,            /**< 获取版本信息 */
+    AT_CMD_GET_IMEI,               /**< 获取IMEI */
+    AT_CMD_GET_ICCID,              /**< 获取ICCID */
+    AT_CMD_GET_IMSI,               /**< 获取IMSI */
+    AT_CMD_CHECK_SIM,              /**< 检查SIM卡状态 */
+    AT_CMD_SIGNAL_QUALITY,         /**< 获取信号质量 */
+    AT_CMD_OPERATOR_INFO,          /**< 获取运营商信息 */
+    AT_CMD_NETWORK_REG_STATUS,     /**< 检查网络注册状态 */
+    AT_CMD_CHECK_DATA_CONN,        /**< 检查数据连接状态 */
+    AT_CMD_NETWORK_REG_CHECK,      /**< 网络注册检查（带\r\n） */
+    AT_CMD_GPRS_REG_CHECK,         /**< GPRS注册检查 */
+    AT_CMD_SET_APN,                /**< 设置APN配置 */
+    AT_CMD_ACTIVATE_PDP,           /**< 激活PDP上下文 */
+    AT_CMD_QUERY_IP,               /**< 查询IP地址 */
+    AT_CMD_MAX                     /**< 枚举最大值 */
+} AT_Cmd_Index_t;
+
+/**
+ * @brief AT指令类型枚举
+ * @note 定义AT指令的四种标准类型
+ */
+typedef enum {
+    AT_TYPE_TEST = 0,              /**< 测试命令 AT+<cmd>=? - 测试是否存在相应的设置命令，并返回有关其参数的类型、值或范围的信息 */
+    AT_TYPE_QUERY,                 /**< 查询命令 AT+<cmd>? - 查询相应设置命令的当前参数值 */
+    AT_TYPE_SET,                   /**< 设置命令 AT+<cmd>=<p1>[,<p2>[,<p3>[...]]] - 设置用户可定义的参数值 */
+    AT_TYPE_EXECUTE,               /**< 执行命令 AT+<cmd> - 返回特定的参数信息或执行特定的操作 */
+    AT_TYPE_BASIC,                 /**< 基本AT命令 - 基础的AT指令，如AT、ATI等 */
+    AT_TYPE_EXTENDED,              /**< 扩展AT命令 - 厂商特定的AT指令 */
+    AT_TYPE_MAX                    /**< 枚举最大值 */
+} AT_Cmd_Type_t;
+
+/**
+ * @brief AT指令执行项结构体
+ * @note 包含AT指令索引和指令类型的组合，用于Lte_ExecuteAtSequence函数
+ */
+typedef struct {
+    AT_Cmd_Index_t cmd_index;      /**< AT指令枚举索引 - 指定要执行的AT指令 */
+    AT_Cmd_Type_t cmd_type;        /**< AT指令类型 - 指定AT指令的执行类型（测试/查询/设置/执行） */
+} AT_Cmd_Item_t;
+
+/**
  * @brief LTE统一消息头
  */
 typedef struct {
@@ -119,12 +168,12 @@ typedef struct {
  * @note 统一管理AT指令的执行参数、重试策略和回调处理
  */
 typedef struct {
+    AT_Cmd_Index_t cmd_index;       /**< AT指令枚举索引 - 唯一标识指令类型 */
     ModuleType_t module_type;       /**< 模块类型 - 指定目标模块（4G/WiFi/BT等） */
     const char* at_cmd;             /**< AT指令字符串 - 要发送的完整AT指令（含\r\n） */
     const char* expected_resp;      /**< 期望的响应字符串 - 用于判断指令是否执行成功 */
     uint32_t timeout_ms;            /**< 超时时间（毫秒） - 等待响应的最大时间 */
     uint8_t retries;                /**< 重试次数 - 指令失败时的最大重试次数 */
-    const char* description;        /**< 指令描述 - 用于日志输出和调试 */
     bool critical;                  /**< 关键指令标志：
                                      *   true=失败时立即停止序列并重启模块
                                      *   false=失败时记录日志但继续执行后续指令 */
@@ -190,32 +239,27 @@ typedef struct {
  * @param length 数据长度
  * @return bool 发送是否成功
  */
-bool LTE_SendDataToMCU(ModuleType_t module_type, const uint8_t* data, uint32_t length);
+bool lte_send_data_to_mcu(ModuleType_t module_type, const uint8_t* data, uint32_t length);
 /**
  * @brief 初始化4G模块初始化任务
  * @param config 初始化配置指针，NULL使用默认配置
  * @return BaseType_t 初始化结果
  */
-BaseType_t Lte_init(const LteInitConfig_t* config);
+BaseType_t lte_init(const LteInitConfig_t* config);
 
-/**
- * @brief 执行AT指令配置
- * @param cmd_config AT指令配置
- * @return AT_Result_t 执行结果
- */
-AT_Result_t execute_at_command_with_config(const AT_Cmd_Config_t* cmd_config);
+
 
 /**
  * @brief 获取4G模块当前状态
  * @return LteState_t 当前状态
  */
-LteState_t Lte_GetState(void);
+LteState_t lte_get_state(void);
 
 /**
  * @brief 强制重新初始化4G模块
  * @return BaseType_t 操作结果
  */
-BaseType_t Lte_Reinitialize(void);
+BaseType_t lte_reinitialize(void);
 /**
  * @brief 获取4G模块初始化状态
  * @return bool 初始化是否完成
@@ -225,19 +269,19 @@ bool get_lte_initialization_status(void);
  * @brief 硬件重启4G模块
  * @return BaseType_t 操作结果
  */
-BaseType_t Lte_HardReset(void);
+BaseType_t lte_hard_reset(void);
 
 /**
  * @brief 软件重启4G模块
  * @return BaseType_t 操作结果
  */
-BaseType_t Lte_SoftReset(void);
+BaseType_t lte_soft_reset(void);
 
 /**
  * @brief 检查4G模块是否就绪
  * @return bool 是否就绪
  */
-bool Lte_IsReady(void);
+bool lte_is_ready(void);
 
 /**
  * @brief 获取信号强度
@@ -245,14 +289,14 @@ bool Lte_IsReady(void);
  * @param ber 误码率输出
  * @return bool 获取是否成功
  */
-bool Lte_GetSignalStrength(int8_t* rssi, uint8_t* ber);
+bool lte_get_signal_strength(int8_t* rssi, uint8_t* ber);
 
 /**
  * @brief 等待4G模块初始化完成
  * @param timeout_ms 等待超时时间
  * @return bool 是否在超时前完成初始化
  */
-bool Lte_WaitForReady(uint32_t timeout_ms);
+bool lte_wait_for_ready(uint32_t timeout_ms);
 
 /* ============================= 互斥访问接口 ============================= */
 
@@ -263,38 +307,53 @@ bool Lte_WaitForReady(uint32_t timeout_ms);
  * @param timeout_ms 获取超时时间（毫秒）
  * @return bool 是否成功获取互斥量
  * 
- * @note 获取成功后必须调用 ReleaseLteAccessMutex() 释放
+ * @note 获取成功后必须调用 release_lte_access_mutex() 释放
  */
-bool AcquireLteAccessMutex(uint32_t timeout_ms);
+bool acquire_lte_access_mutex(uint32_t timeout_ms);
 
 /**
  * @brief 释放LTE串口访问互斥量
- * @details 释放之前通过 AcquireLteAccessMutex() 获取的互斥量
+ * @details 释放之前通过 acquire_lte_access_mutex() 获取的互斥量
  * 
  * @note 只能在成功获取互斥量的任务中调用
  */
-void ReleaseLteAccessMutex(void);
+void release_lte_access_mutex(void);
 
 /**
- * @brief 执行单个AT指令
+ * @brief 执行单个AT指令（通过配置）
  * @param cmd_config AT指令配置
  * @return AT_Result_t 执行结果
  */
-AT_Result_t Lte_ExecuteAtCommand(const AT_Cmd_Config_t* cmd_config);
+AT_Result_t at_exec(const AT_Cmd_Config_t* cmd_config);
 
 /**
- * @brief 执行AT指令序列
- * @param cmd_sequence AT指令序列数组
+ * @brief 执行单个AT指令（通过枚举索引）
+ * @param cmd_index AT指令枚举索引
+ * @return AT_Result_t 执行结果
+ */
+AT_Result_t at_exec_by_id(AT_Cmd_Index_t cmd_index);
+
+/**
+ * @brief 执行AT指令序列（支持指令类型）
+ * @param cmd_items AT指令项数组，包含指令索引和类型
  * @param count 指令数量
  * @return bool 是否全部执行成功
  */
-bool Lte_ExecuteAtSequence(const AT_Cmd_Config_t* cmd_sequence, uint8_t count);
+bool at_exec_batch(const AT_Cmd_Item_t cmd_items[], uint8_t count);
+
+/**
+ * @brief 根据枚举索引和类型获取AT指令配置
+ * @param cmd_index AT指令枚举索引
+ * @param cmd_type AT指令类型
+ * @return const AT_Cmd_Config_t* 指令配置指针，NULL表示索引无效
+ */
+const AT_Cmd_Config_t* at_get_config(AT_Cmd_Index_t cmd_index, AT_Cmd_Type_t cmd_type);
 
 /**
  * @brief 获取默认初始化配置
  * @return 默认配置
  */
-LteInitConfig_t Lte_GetDefaultConfig(void);
+LteInitConfig_t lte_get_default_config(void);
 
 /**
  * @brief 向4G数据处理队列发送数据
@@ -303,7 +362,7 @@ LteInitConfig_t Lte_GetDefaultConfig(void);
  * @return bool 发送是否成功
  * @note 统一接口：将接收到的4G模块数据推送到内部处理队列
  */
-bool Lte_SendDataToQueue(const uint8_t* data, uint32_t length);
+bool lte_send_data_to_queue(const uint8_t* data, uint32_t length);
 
 /* 声明全局唯一的4G设备信息实例 */
 extern Lte_Device_Info_t g_Lte_info;
@@ -313,14 +372,14 @@ extern Lte_Device_Info_t g_Lte_info;
  * @param info 设备信息结构指针
  * @return bool 获取是否成功
  */
-bool Lte_GetDeviceInfo(Lte_Device_Info_t* info);
+bool lte_get_device_info(Lte_Device_Info_t* info);
 
 /**
  * @brief 更新4G设备信息
- * @param info 设备信息结构指针
+ * @param info 设备信息结构体指针（输入）
  * @return bool 更新是否成功
  */
-bool Lte_UpdateDeviceInfo(const Lte_Device_Info_t* info);
+bool lte_update_device_info(const Lte_Device_Info_t* info);
 
 /* ==================== TCP连接服务器完整流程接口 ==================== */
 

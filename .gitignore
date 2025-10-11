@@ -18,6 +18,10 @@ JLinkSettings.ini
 *.bak
 *.dep
 *.d
+
+# VS Code IntelliSense database files
+.vscode/BROWSE.VC.DB*
+.vscode/browse.vc.db*
 *.crf
 *.htm
 *.lnp

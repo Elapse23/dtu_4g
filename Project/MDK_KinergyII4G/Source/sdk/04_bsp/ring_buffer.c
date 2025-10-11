@@ -24,7 +24,7 @@
 #include "semphr.h"
 
 
-RB_Status RingBuffer_Init(RingBuffer_t* rb, uint8_t* buffer, uint32_t capacity, uint32_t element_size) {
+RB_Status ring_buffer_init(RingBuffer_t* rb, uint8_t* buffer, uint32_t capacity, uint32_t element_size) {
     if (!rb || !buffer || capacity == 0 || element_size == 0) return RB_ERROR_INIT;
 
     rb->buffer = buffer;  // 使用外部传入的静态数组
@@ -39,7 +39,7 @@ RB_Status RingBuffer_Init(RingBuffer_t* rb, uint8_t* buffer, uint32_t capacity, 
     return RB_OK;
 }
 
-RB_Status RingBuffer_Deinit(RingBuffer_t* rb) {
+RB_Status ring_buffer_deinit(RingBuffer_t* rb) {
     if (!rb) return RB_ERROR_INIT;
 
     // 不再释放buffer，因为它是外部静态数组
@@ -50,7 +50,7 @@ RB_Status RingBuffer_Deinit(RingBuffer_t* rb) {
     return RB_OK;
 }
 
-RB_Status RingBuffer_Write(RingBuffer_t* rb, const void* data) {
+RB_Status ring_buffer_write(RingBuffer_t* rb, const void* data) {
     if (!rb || !rb->buffer || !data) return RB_ERROR_INIT;
     if (rb->count >= rb->capacity) return RB_ERROR_BUFFER_FULL;
 
@@ -68,7 +68,7 @@ RB_Status RingBuffer_Write(RingBuffer_t* rb, const void* data) {
     return RB_OK;
 }
 
-RB_Status RingBuffer_WriteFromISR(RingBuffer_t* rb, const void* data, void* xHigherPriorityTaskWoken) {
+RB_Status ring_buffer_write_from_isr(RingBuffer_t* rb, const void* data, void* xHigherPriorityTaskWoken) {
     if (!rb || !rb->buffer || !data) return RB_ERROR_INIT;
     if (rb->count >= rb->capacity) return RB_ERROR_BUFFER_FULL;
 
@@ -80,7 +80,7 @@ RB_Status RingBuffer_WriteFromISR(RingBuffer_t* rb, const void* data, void* xHig
     return RB_OK;
 }
 
-RB_Status RingBuffer_Read(RingBuffer_t* rb, void* data) {
+RB_Status ring_buffer_read(RingBuffer_t* rb, void* data) {
     if (!rb || !rb->buffer || !data) return RB_ERROR_INIT;
     
     // 注意：信号量的获取(Take)应由消费者任务在使用Read之前完成，而不是在Read函数内部
@@ -99,7 +99,7 @@ RB_Status RingBuffer_Read(RingBuffer_t* rb, void* data) {
     return RB_OK;
 }
 
-RB_Status RingBuffer_ReadFromISR(RingBuffer_t* rb, void* data) {
+RB_Status ring_buffer_read_from_isr(RingBuffer_t* rb, void* data) {
     if (!rb || !rb->buffer || !data) return RB_ERROR_INIT;
     
     if (rb->count == 0) return RB_ERROR_BUFFER_EMPTY;
@@ -119,7 +119,7 @@ RB_Status RingBuffer_ReadFromISR(RingBuffer_t* rb, void* data) {
  * @param max_len 最大预读长度
  * @return 实际读取的字节数
  */
-size_t RingBuffer_Peek(RingBuffer_t* rb, uint8_t* dest, size_t max_len)
+size_t ring_buffer_peek(RingBuffer_t* rb, uint8_t* dest, size_t max_len)
 {
     if (!rb || !rb->buffer || !dest || max_len == 0) return 0;
 
@@ -139,7 +139,7 @@ size_t RingBuffer_Peek(RingBuffer_t* rb, uint8_t* dest, size_t max_len)
  * @param rb 环形缓冲区对象
  * @param len 要丢弃的字节数
  */
-void RingBuffer_Drop(RingBuffer_t* rb, size_t len)
+void ring_buffer_drop(RingBuffer_t* rb, size_t len)
 {
     if (!rb || len == 0 || !rb->buffer) return;
 
@@ -157,7 +157,7 @@ void RingBuffer_Drop(RingBuffer_t* rb, size_t len)
  * @param len 字节长度
  * @return 实际读取的长度
  */
-size_t RingBuffer_ReadMulti(RingBuffer_t* rb, uint8_t* dest, size_t len)
+size_t ring_buffer_read_multi(RingBuffer_t* rb, uint8_t* dest, size_t len)
 {
     if (!rb || !rb->buffer || !dest || len == 0) return 0;
 
@@ -172,7 +172,7 @@ size_t RingBuffer_ReadMulti(RingBuffer_t* rb, uint8_t* dest, size_t len)
     return total_read;
 }
 
-void RingBuffer_Clear(RingBuffer_t* rb) {
+void ring_buffer_clear(RingBuffer_t* rb) {
     if (!rb || !rb->buffer) return;
 
     // 此处可以添加临界区保护
@@ -191,7 +191,7 @@ void RingBuffer_Clear(RingBuffer_t* rb) {
  * @param rb 缓冲区指针
  * @return true/false
  */
-bool RingBuffer_IsFull(const RingBuffer_t *rb)
+bool ring_buffer_is_full(const RingBuffer_t *rb)
 {
     if (!rb)
         return false;
@@ -203,7 +203,7 @@ bool RingBuffer_IsFull(const RingBuffer_t *rb)
  * @param rb 缓冲区指针
  * @return true/false
  */
-bool RingBuffer_IsEmpty(const RingBuffer_t *rb)
+bool ring_buffer_is_empty(const RingBuffer_t *rb)
 {
     if (!rb)
         return true;
@@ -215,9 +215,9 @@ bool RingBuffer_IsEmpty(const RingBuffer_t *rb)
  * @param rb 缓冲区指针
  * @return true/false
  */
-bool RingBuffer_IsAvailable(const RingBuffer_t *rb)
+bool ring_buffer_is_available(const RingBuffer_t *rb)
 {
     if (!rb)
         return false;
-    return !RingBuffer_IsEmpty(rb);
+    return !ring_buffer_is_empty(rb);
 }

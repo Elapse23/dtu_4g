@@ -73,9 +73,9 @@ typedef enum
 #define ALL_LED_OFF()           do { NET_LED_OFF(); COM_LED_OFF(); } while(0)
 
 // 函数声明
-void LED_Init(void);
-void LED_Flash(void);
-void LED_FlashCtrl(LED_Type_t led_type,
+void led_init(void);
+void led_flash(void);
+void led_flash_ctrl(LED_Type_t led_type,
                    uint32_t interval,
                    uint16_t flash_count,
                    LED_FlashType_t flash_type,

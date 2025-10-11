@@ -135,7 +135,7 @@ void DebugMon_Handler(void)
  * @note 在启动文件或中断向量表中被调用
  */
 void UART5_IRQHandler(void) {
-    UART_RingBuffer_IRQHandler(UART_ID_RS485);
+    uart_irq_handler(UART_ID_RS485);
 }
 
 /**
@@ -143,7 +143,7 @@ void UART5_IRQHandler(void) {
  * @note 在启动文件或中断向量表中被调用
  */
 void USART3_IRQHandler(void) {
-    UART_RingBuffer_IRQHandler(UART_ID_LTE);
+    uart_irq_handler(UART_ID_LTE);
 }
 
 /**
@@ -151,7 +151,7 @@ void USART3_IRQHandler(void) {
  * @note LOG口通常只用于发送，一般不需要中断
  */
 void UART4_IRQHandler(void) {
-    UART_RingBuffer_IRQHandler(UART_ID_LOG);
+    uart_irq_handler(UART_ID_LOG);
 }
 
 /**

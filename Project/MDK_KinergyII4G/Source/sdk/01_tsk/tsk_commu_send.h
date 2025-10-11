@@ -88,34 +88,9 @@ void vCommuSendTask(void* pvParameters);
  * @return BaseType_t 初始化结果 (pdPASS/pdFAIL)
  * @note 创建任务队列、互斥量和任务本身
  */
-BaseType_t CommuSend_Init(void);
-
-/**
- * @brief 统一的UART数据发送接口
- * @param uart_id 串口ID
- * @param data 要发送的数据
- * @param length 数据长度
- * @param timeout_ms 超时时间（毫秒）
- * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
- */
-BaseType_t CommuSend_UartData(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms);
-
-/**
- * @brief 发送LTE AT命令
- * @param at_cmd AT命令配置结构
- * @return BaseType_t 发送结果
- */
-BaseType_t CommuSend_LTECommand(const AT_Cmd_Config_t* at_cmd);
+BaseType_t commu_send_init(void);
 
 
-
-/**
- * @brief 发送RS485数据
- * @param data 数据指针
- * @param length 数据长度
- * @return BaseType_t 发送结果
- */
-BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length);
 
 
 
@@ -129,7 +104,7 @@ BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length);
  * @param timeout 超时时间
  */
 #define SEND_4G_AT_COMMAND(cmd_str, expected_resp, timeout) \
-    CommuSend_ModuleCommand(MODULE_TYPE_4G, COMMAND_TYPE_AT, \
+    commu_send_module_command(MODULE_TYPE_4G, COMMAND_TYPE_AT, \
                            cmd_str, strlen(cmd_str), timeout, NULL, NULL)
 
 /**
@@ -138,7 +113,7 @@ BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length);
  * @param timeout 超时时间
  */
 #define SEND_BLE_COMMAND(cmd_str, timeout) \
-    CommuSend_ModuleCommand(MODULE_TYPE_BLE, COMMAND_TYPE_AT, \
+    commu_send_module_command(MODULE_TYPE_BLE, COMMAND_TYPE_AT, \
                            cmd_str, strlen(cmd_str), timeout, NULL, NULL)
 
 /**
@@ -147,7 +122,7 @@ BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length);
  * @param data_len 数据长度
  */
 #define SEND_RS485_DATA(data_ptr, data_len) \
-    CommuSend_ModuleData(MODULE_TYPE_RS485, data_ptr, data_len, 1000)
+    commu_send_module_data(MODULE_TYPE_RS485, data_ptr, data_len, 1000)
 
 /* 便捷宏定义 */
 
@@ -156,33 +131,29 @@ BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length);
  * @param cmd AT命令字符串
  */
 #define SEND_4G_CMD(cmd) \
-    do { \
-        AT_Cmd_Config_t at_cfg = {cmd, NULL, 1000, 0, NULL, false, NULL}; \
-        CommuSend_LTECommand(&at_cfg); \
-    } while(0)
+    uart_send(UART_ID_LTE, (const uint8_t*)cmd, strlen(cmd), 1000)
 
 /**
  * @brief 发送4G AT命令并等待OK响应
  * @param cmd AT命令字符串
  */
 #define SEND_4G_CMD_OK(cmd) \
-    do { \
-        AT_Cmd_Config_t at_cfg = {cmd, "OK", 3000, 0, NULL, false, NULL}; \
-        CommuSend_LTECommand(&at_cfg); \
-    } while(0)
+    uart_send(UART_ID_LTE, (const uint8_t*)cmd, strlen(cmd), 3000)
 
 /**
  * @brief 发送RS485字符串数据
  * @param str 字符串指针
  */
-#define SEND_RS485_STRING(str)      CommuSend_Rs485Data((const uint8_t*)str, strlen(str))
+#define SEND_RS485_STRING(str) \
+    uart_send(UART_ID_RS485, (const uint8_t*)str, strlen(str), 1000)
 
 /**
- * @brief 发送LOG串口数据（支持转发到LTE）
+ * @brief 发送LOG串口数据
  * @param data 数据指针
  * @param len 数据长度
  */
-#define SEND_LOG_DATA(data, len)    CommuSend_UartData(UART_ID_LOG, data, len, 1000)
+#define SEND_LOG_DATA(data, len) \
+    uart_send(UART_ID_LOG, data, len, 1000)
 
 
 

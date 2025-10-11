@@ -112,17 +112,17 @@ int main(void)
     hardware_init();
 
     /* Initialize 4G module initialization task */
-    if (Lte_init(NULL) != pdPASS) {  // 使用默认配置
+    if (lte_init(NULL) != pdPASS) {  // 使用默认配置
         SYS_LOG_ERROR("Failed to initialize 4G module task");
     }
 
     /* Initialize communication send task */
-    if (CommuSend_Init() != pdPASS) {
+    if (commu_send_init() != pdPASS) {
         SYS_LOG_ERROR("Failed to initialize communication send task");
     }
 
     /* Initialize communication receive task */
-    if (CommuReceive_Init() != pdPASS) {
+    if (commu_receive_init() != pdPASS) {
         SYS_LOG_ERROR("Failed to initialize communication receive task");
     }
 
@@ -147,9 +147,9 @@ void hardware_init()
     /* Initialize peripherals used by main application */
     Flash_Init();            /* SPI flash */
     lte_4g_module_ctrl_pin_init(); /* 4G模块控制引脚初始化 */
-    UART_RingBuffer_Init(UART_ID_RS485, 115200);
-    UART_RingBuffer_Init(UART_ID_LTE, 115200);
-    UART_RingBuffer_Init(UART_ID_LOG, 115200);  // 初始化日志串口
+    uart_init(UART_ID_RS485, 115200);
+    uart_init(UART_ID_LTE, 115200);
+    uart_init(UART_ID_LOG, 115200);  // 初始化日志串口
 
     /* Log manager */
     LogConfig_t log_config = {
@@ -168,7 +168,7 @@ void hardware_init()
     }
 
     /* LED subsystem */
-    LED_Init();
+    led_init();
 }
 
 // Simple LED task implementation used by main integration
@@ -177,7 +177,7 @@ static void vLedTask(void* pvParameters)
     (void)pvParameters;    
     for (;;) {
         /* call LED handler - implementation in led.c */
-        LED_Flash();        
+        led_flash();        
         vTaskDelay(3 * 1000);
     }
 }

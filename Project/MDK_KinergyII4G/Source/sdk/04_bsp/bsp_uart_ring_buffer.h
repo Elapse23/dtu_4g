@@ -78,118 +78,58 @@ typedef struct {
 
 /**
  * @brief 初始化串口环形缓冲区驱动
- * @param uart_id 串口ID
- * @param baudrate 波特率
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_Init(UART_ID_t uart_id, uint32_t baudrate);
+UART_Status_t uart_init(UART_ID_t uart_id, uint32_t baudrate);
 
 /**
  * @brief 反初始化串口环形缓冲区驱动
- * @param uart_id 串口ID
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_Deinit(UART_ID_t uart_id);
+UART_Status_t uart_deinit(UART_ID_t uart_id);
 
 /**
  * @brief 发送数据（阻塞方式）
- * @param uart_id 串口ID
- * @param data 要发送的数据
- * @param length 数据长度
- * @param timeout_ms 超时时间（毫秒）
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_Send(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms);
+UART_Status_t uart_send(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms);
 
 /**
  * @brief 接收数据（阻塞方式）
- * @param uart_id 串口ID
- * @param data 接收数据缓冲区
- * @param length 期望接收的字节数
- * @param timeout_ms 超时时间（毫秒）
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_Receive(UART_ID_t uart_id, uint8_t* data, uint32_t length, uint32_t timeout_ms);
+UART_Status_t uart_receive(UART_ID_t uart_id, uint8_t* data, uint32_t length, uint32_t timeout_ms);
 
 /**
  * @brief 非阻塞读取一个字节
- * @param uart_id 串口ID
- * @param data 存储字节的指针
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_ReadByte(UART_ID_t uart_id, uint8_t* data);
+UART_Status_t uart_read_byte(UART_ID_t uart_id, uint8_t* data);
 
 /**
  * @brief 获取接收缓冲区中可读取的字节数
- * @param uart_id 串口ID
- * @return 可读取的字节数，错误返回0
  */
-uint32_t UART_RingBuffer_GetAvailableBytes(UART_ID_t uart_id);
+uint32_t uart_get_available_bytes(UART_ID_t uart_id);
 
 /**
  * @brief 清空接收缓冲区
- * @param uart_id 串口ID
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_FlushRx(UART_ID_t uart_id);
+UART_Status_t uart_flush_rx(UART_ID_t uart_id);
 
 /**
  * @brief 清空发送缓冲区
- * @param uart_id 串口ID
- * @return UART_Status_t 状态码
  */
-UART_Status_t UART_RingBuffer_FlushTx(UART_ID_t uart_id);
+UART_Status_t uart_flush_tx(UART_ID_t uart_id);
+
+
 
 /**
- * @brief 发送字符串
- * @param uart_id 串口ID
- * @param str 要发送的字符串
- * @param timeout_ms 超时时间（毫秒）
- * @return UART_Status_t 状态码
+ * @brief 串口中断处理函数
  */
-UART_Status_t UART_RingBuffer_SendString(UART_ID_t uart_id, const char* str, uint32_t timeout_ms);
+void uart_irq_handler(UART_ID_t uart_id);
 
 /**
- * @brief 格式化发送（类似printf）
- * @param uart_id 串口ID
- * @param timeout_ms 超时时间（毫秒）
- * @param format 格式字符串
- * @param ... 可变参数
- * @return UART_Status_t 状态码
+ * @brief LTE调试统计信息获取
  */
-UART_Status_t UART_RingBuffer_Printf(UART_ID_t uart_id, uint32_t timeout_ms, const char* format, ...);
-
-/**
- * @brief 串口中断处理函数（在具体的IRQHandler中调用）
- * @param uart_id 串口ID
- */
-void UART_RingBuffer_IRQHandler(UART_ID_t uart_id);
-
-/**
- * @brief 获取LTE中断调试信息
- * @return LTE中断接收计数
- */
-uint32_t UART_RingBuffer_GetLteIrqCount(void);
-
-/**
- * @brief 获取LTE发送字节计数
- * @return LTE发送字节计数
- */
-uint32_t UART_RingBuffer_GetLteSendCount(void);
-
-/**
- * @brief 获取LTE环形缓冲区写入统计
- * @param write_ok 成功写入计数指针
- * @param write_fail 失败写入计数指针
- */
-void UART_RingBuffer_GetLteWriteStats(uint32_t* write_ok, uint32_t* write_fail);
-
-/**
- * @brief 获取LTE最近接收的调试数据
- * @param debug_data 输出缓冲区(至少8字节)
- * @return 实际数据长度
- */
-uint32_t UART_RingBuffer_GetLteDebugData(uint8_t* debug_data);
+uint32_t uart_get_lte_irq_count(void);
+uint32_t uart_get_lte_send_count(void);
+void uart_get_lte_write_stats(uint32_t* write_ok, uint32_t* write_fail);
+uint32_t uart_get_lte_debug_data(uint8_t* debug_data);
 
 // === 便捷宏定义 ===
 
@@ -199,24 +139,14 @@ uint32_t UART_RingBuffer_GetLteDebugData(uint8_t* debug_data);
 #define UART_TIMEOUT_INFINITE       0xFFFFFFFF
 
 // 串口发送宏（默认超时时间）
-#define UART_Send_RS485(data, len)      UART_RingBuffer_Send(UART_ID_RS485, data, len, UART_TIMEOUT_DEFAULT)
-#define UART_Send_LTE(data, len)        UART_RingBuffer_Send(UART_ID_LTE, data, len, UART_TIMEOUT_DEFAULT)
-#define UART_Send_LOG(data, len)        UART_RingBuffer_Send(UART_ID_LOG, data, len, UART_TIMEOUT_DEFAULT)
+#define uart_send_rs485(data, len)      uart_send(UART_ID_RS485, data, len, UART_TIMEOUT_DEFAULT)
+#define uart_send_lte(data, len)        uart_send(UART_ID_LTE, data, len, UART_TIMEOUT_DEFAULT)
+#define uart_send_log(data, len)        uart_send(UART_ID_LOG, data, len, UART_TIMEOUT_DEFAULT)
 
 // 串口接收宏（默认超时时间）
-#define UART_Receive_RS485(data, len)   UART_RingBuffer_Receive(UART_ID_RS485, data, len, UART_TIMEOUT_DEFAULT)
-#define UART_Receive_LTE(data, len)     UART_RingBuffer_Receive(UART_ID_LTE, data, len, UART_TIMEOUT_DEFAULT)
-#define UART_Receive_LOG(data, len)     UART_RingBuffer_Receive(UART_ID_LOG, data, len, UART_TIMEOUT_DEFAULT)
-
-// 字符串发送宏
-#define UART_SendString_RS485(str)      UART_RingBuffer_SendString(UART_ID_RS485, str, UART_TIMEOUT_DEFAULT)
-#define UART_SendString_LTE(str)        UART_RingBuffer_SendString(UART_ID_LTE, str, UART_TIMEOUT_DEFAULT)
-#define UART_SendString_LOG(str)        UART_RingBuffer_SendString(UART_ID_LOG, str, UART_TIMEOUT_DEFAULT)
-
-// Printf宏
-#define UART_Printf_RS485(fmt, ...)     UART_RingBuffer_Printf(UART_ID_RS485, UART_TIMEOUT_DEFAULT, fmt, ##__VA_ARGS__)
-#define UART_Printf_LTE(fmt, ...)       UART_RingBuffer_Printf(UART_ID_LTE, UART_TIMEOUT_DEFAULT, fmt, ##__VA_ARGS__)
-#define UART_Printf_LOG(fmt, ...)       UART_RingBuffer_Printf(UART_ID_LOG, UART_TIMEOUT_DEFAULT, fmt, ##__VA_ARGS__)
+#define uart_receive_rs485(data, len)   uart_receive(UART_ID_RS485, data, len, UART_TIMEOUT_DEFAULT)
+#define uart_receive_lte(data, len)     uart_receive(UART_ID_LTE, data, len, UART_TIMEOUT_DEFAULT)
+#define uart_receive_log(data, len)     uart_receive(UART_ID_LOG, data, len, UART_TIMEOUT_DEFAULT)
 
 // NOTE: 2025-09 移除原LOG<->LTE串口转发功能，若需调试请直接使用对应串口。
 

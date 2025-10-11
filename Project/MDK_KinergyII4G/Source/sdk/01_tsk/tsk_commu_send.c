@@ -34,14 +34,7 @@ static QueueHandle_t s_rs485_send_queue = NULL;            // RS485串口发送�
 static TaskHandle_t s_send_task_handle = NULL;
 
 /* 私有函数声明 */
-static void process_lte_message(const LteSendMessage_t* message);
-static void process_rs485_message(const Rs485SendMessage_t* message);
-static bool send_lte_data(const char* data, uint32_t length);
 static void send_heartbeat_data(void);
-
-/* 公共函数声明 */
-BaseType_t CommuSend_LTECommand(const AT_Cmd_Config_t* at_cmd);
-BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length);
 
 
 /**
@@ -63,11 +56,21 @@ void vCommuSendTask(void* pvParameters)
         
         /* 优先 LTE 队列 */
         if (xQueueReceive(s_lte_send_queue, &lte_tx_message, 0) == pdTRUE) {
-            process_lte_message(&lte_tx_message);
+            if (lte_tx_message.data) {
+                UART_Status_t uart_result = uart_send(UART_ID_LTE, 
+                    lte_tx_message.data, lte_tx_message.length, lte_tx_message.timeout_ms);
+                LOG_INFO(LOG_MODULE_PROTOCOL, "LTE data sent (%d bytes), Result: %s", 
+                    lte_tx_message.length, uart_result == UART_OK ? "SUCCESS" : "FAILED");
+            }
         }
         /* 再处理 RS485 */
         else if (xQueueReceive(s_rs485_send_queue, &rs485_tx_message, 0) == pdTRUE) {
-            process_rs485_message(&rs485_tx_message);
+            if (rs485_tx_message.data && rs485_tx_message.length > 0) {
+                UART_Status_t uart_result = uart_send(UART_ID_RS485, 
+                    rs485_tx_message.data, rs485_tx_message.length, SEND_TIMEOUT_MS);
+                LOG_INFO(LOG_MODULE_PROTOCOL, "RS485 data sent (%d bytes), Result: %s", 
+                    rs485_tx_message.length, uart_result == UART_OK ? "SUCCESS" : "FAILED");
+            }
         }
         else {
             send_heartbeat_data();
@@ -79,7 +82,7 @@ void vCommuSendTask(void* pvParameters)
  * @brief 初始化通信发送任务 - 支持共享模块
  * @return BaseType_t 初始化结果
  */
-BaseType_t CommuSend_Init(void)
+BaseType_t commu_send_init(void)
 {
     BaseType_t result = pdPASS;
     
@@ -117,73 +120,13 @@ BaseType_t CommuSend_Init(void)
 
 
 
-/**
- * @brief 统一的UART数据发送接口
- * @param uart_id 串口ID
- * @param data 要发送的数据
- * @param length 数据长度
- * @param timeout_ms 超时时间（毫秒）
- * @return BaseType_t 发送结果 (pdPASS/pdFAIL)
- */
-BaseType_t CommuSend_UartData(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms)
-{
-    UART_Status_t uart_result;
-    if (uart_id == UART_ID_LTE) {
-        uart_result = UART_RingBuffer_Send(uart_id, data, length, timeout_ms);
-        LOG_DEBUG(LOG_MODULE_PROTOCOL, "LTE direct send result: %s, data: %.*s", 
-                 uart_result == UART_OK ? "SUCCESS" : "FAILED", 
-                 (int)length, (const char*)data);
-    } else {
-        uart_result = UART_RingBuffer_Send(uart_id, data, length, timeout_ms);
-    }
-    return (uart_result == UART_OK) ? pdPASS : pdFAIL;
-}
 
-/**
- * @brief 处理发送消息
- * @param message 发送消息指针
- */
-static void process_lte_message(const LteSendMessage_t* message)
-{
-    bool send_result = false;
-    if (!message)return;
-    
-    send_result = send_lte_data((const char*)message->data, message->length);
-    LOG_INFO(LOG_MODULE_PROTOCOL, "4G AT command: %s, Result: %s", 
-            message->data, send_result ? "SUCCESS" : "FAILED");
-}
 
-/**
- * @brief 处理发送消息
- * @param message 发送消息指针
- */
-static void process_rs485_message(const Rs485SendMessage_t* message)
-{
-    BaseType_t send_result;
-    
-    if (!message) {
-        return;
-    }
-    send_result = CommuSend_UartData(UART_ID_RS485, message->data, message->length, SEND_TIMEOUT_MS);
-    LOG_INFO(LOG_MODULE_PROTOCOL, "RS485 data sent (%d bytes), Result: %s", 
-            message->length, send_result == pdPASS ? "SUCCESS" : "FAILED");
 
-}
 
-/**
- * @brief 发送lte 数据
- * @param data 数据内容
- * @param length 数据长度
- * @return bool 发送结果
- */
-static bool send_lte_data(const char* data, uint32_t length)
-{
-    BaseType_t send_result;
-    send_result = CommuSend_UartData(UART_ID_LTE, (const uint8_t*)data, length, SEND_TIMEOUT_MS);
-    LOG_INFO(LOG_MODULE_PROTOCOL, "LTE data sent (%d bytes), Result: %s", 
-                length, send_result ? "SUCCESS" : "FAILED");
-    return (send_result == pdPASS);
-}
+
+
+
 
 
 
@@ -197,57 +140,19 @@ static void send_heartbeat_data(void)
     /* 每1000次心跳发送一次4G状态查询 */
     if ((heartbeat_counter % 1000) == 0) {
         /* 检查4G模块状态 */
-        LteState_t state = Lte_GetState();
+        LteState_t state = lte_get_state();
         if (state >= LTE_STATE_READY) {
-            static const AT_Cmd_Config_t at_cmd = {
-                .module_type = MODULE_TYPE_4G,
-                .at_cmd = "AT",
-                .expected_resp = "OK",
-                .timeout_ms = 2000,
-                .retries = 1,
-                .description = "Heartbeat test",
-                .critical = false,
-                .callback = NULL
-            };
-            CommuSend_LTECommand(&at_cmd);
+            /* 直接发送AT心跳命令 */
+            const char* at_cmd = "AT\r\n";
+            uart_send(UART_ID_LTE, (const uint8_t*)at_cmd, strlen(at_cmd), 2000);
         }
     }
     
     heartbeat_counter++;
 }
 
-/**
- * @brief 发送LTE AT命令
- * @param at_cmd AT命令配置结构
- * @return BaseType_t 发送结果
- */
-BaseType_t CommuSend_LTECommand(const AT_Cmd_Config_t* at_cmd)
-{
-    if (!at_cmd) {
-        return pdFAIL;
-    }
-    
-    // 直接使用execute_at_command_with_config函数执行AT命令
-    AT_Result_t result = execute_at_command_with_config(at_cmd);
-    
-    // 将AT_Result_t转换为BaseType_t
-    return (result == AT_RESULT_OK) ? pdPASS : pdFAIL;
-}
 
 
-/**
- * @brief 发送RS485数据
- * @param data 数据指针
- * @param length 数据长度
- * @return BaseType_t 发送结果
- */
-BaseType_t CommuSend_Rs485Data(const uint8_t* data, uint16_t length)
-{
-    if (!data || length == 0) {
-        return pdFAIL;
-    }
-    
-    // 直接通过UART发送RS485数据
-    return CommuSend_UartData(UART_ID_RS485, data, length, 1000);
-}
+
+
 

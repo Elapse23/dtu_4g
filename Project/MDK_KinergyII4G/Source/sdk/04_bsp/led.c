@@ -30,7 +30,7 @@ static LED_FlashState_t com_led_state = {0};
 /**
  * @brief  LED硬件初始化
  */
-void LED_Init(void)
+void led_init(void)
 {
     // 使能GPIO时钟
     RCC_EnableAPB2PeriphClk((NET_GREEN_CLK | NET_RED_CLK | COM_GREEN_CLK | COM_RED_CLK), ENABLE);
@@ -69,7 +69,7 @@ void LED_Init(void)
  * @brief  LED控制函数
  * @param  flash_type: LED闪烁类型
  */
-static void LED_Control(LED_FlashType_t flash_type)
+static void led_control(LED_FlashType_t flash_type)
 {
     switch(flash_type)
     {
@@ -125,7 +125,7 @@ static void LED_Control(LED_FlashType_t flash_type)
  * @param  flash_type: 闪烁类型
  * @param  next_type: 下一个类型
  */
-void LED_FlashCtrl(LED_Type_t led_type,
+void led_flash_ctrl(LED_Type_t led_type,
                    uint32_t interval,
                    uint16_t flash_count,
                    LED_FlashType_t flash_type,
@@ -156,14 +156,14 @@ void LED_FlashCtrl(LED_Type_t led_type,
     state->is_init = 1;
     
     // 立即应用当前状态
-    LED_Control(flash_type);
+    led_control(flash_type);
 }
 
 /**
  * @brief  LED闪烁处理（需要在定时器或任务中周期调用）
  * @note   为了与原始实现保持一致，使用FreeRTOS时间戳进行精确计时
  */
-void LED_Flash(void)
+void led_flash(void)
 {
     // 网络LED闪烁处理
     static uint8_t net_state_backup = 1;
@@ -192,7 +192,7 @@ void LED_Flash(void)
     {
         if(LED_NONE != net_led_state.flash_type)
         {
-            LED_Control(net_led_state.flash_type);
+            led_control(net_led_state.flash_type);
         }
     }
     else
@@ -224,11 +224,11 @@ void LED_Flash(void)
         net_state_backup = net_state;
         if(net_state_backup)
         {
-            LED_Control(net_led_state.next_type);
+            led_control(net_led_state.next_type);
         }
         else
         {
-            LED_Control(net_led_state.flash_type);
+            led_control(net_led_state.flash_type);
         }
     }
     
@@ -259,7 +259,7 @@ void LED_Flash(void)
     {
         if(LED_NONE != com_led_state.flash_type)
         {
-            LED_Control(com_led_state.flash_type);
+            led_control(com_led_state.flash_type);
         }
     }
     else
@@ -291,11 +291,11 @@ void LED_Flash(void)
         com_state_backup = com_state;
         if(com_state_backup)
         {
-            LED_Control(com_led_state.next_type);
+            led_control(com_led_state.next_type);
         }
         else
         {
-            LED_Control(com_led_state.flash_type);
+            led_control(com_led_state.flash_type);
         }
     }
 }
@@ -306,7 +306,7 @@ void LED_Flash(void)
  */
 void LED_SetNetState(LED_FlashType_t state)
 {
-    LED_Control(state);
+    led_control(state);
 }
 
 /**
@@ -315,7 +315,7 @@ void LED_SetNetState(LED_FlashType_t state)
  */
 void LED_SetComState(LED_FlashType_t state)
 {
-    LED_Control(state);
+    led_control(state);
 }
 
 /**
