@@ -292,6 +292,27 @@ bool lte_is_ready(void);
 bool lte_get_signal_strength(int8_t* rssi, uint8_t* ber);
 
 /**
+ * @brief 将RSSI信号强度(dBm)转换为百分比
+ * @param rssi_dbm 信号强度(dBm)，范围通常为 -113 到 -51 dBm
+ * @return 信号强度百分比 (0-100%)
+ */
+uint8_t lte_rssi_to_percentage(int8_t rssi_dbm);
+
+/**
+ * @brief 将RSSI信号强度转换为信号等级
+ * @param rssi_dbm 信号强度(dBm)
+ * @return 信号等级 (0-4): 0=无信号, 1=较差, 2=一般, 3=良好, 4=优秀
+ */
+uint8_t lte_rssi_to_level(int8_t rssi_dbm);
+
+/**
+ * @brief 获取信号质量描述字符串
+ * @param rssi_dbm 信号强度(dBm)
+ * @return 信号质量描述字符串
+ */
+const char* lte_rssi_to_description(int8_t rssi_dbm);
+
+/**
  * @brief 等待4G模块初始化完成
  * @param timeout_ms 等待超时时间
  * @return bool 是否在超时前完成初始化

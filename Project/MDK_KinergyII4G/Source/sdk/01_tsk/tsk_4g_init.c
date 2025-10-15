@@ -150,6 +150,80 @@ static void monitor_network_status(void)
     }
 }
 
+/**
+ * @brief 将RSSI信号强度(dBm)转换为百分比
+ * @param rssi_dbm 信号强度(dBm)，范围通常为 -113 到 -51 dBm
+ * @return 信号强度百分比 (0-100%)
+ * 
+ * @note 参考标准：
+ *       -51 dBm 或更高  = 100% (优秀)
+ *       -75 dBm         = 75%  (良好)
+ *       -85 dBm         = 50%  (一般)
+ *       -95 dBm         = 25%  (较差)
+ *       -113 dBm 或更低 = 0%   (极差/无信号)
+ */
+static uint8_t rssi_to_percentage(int8_t rssi_dbm)
+{
+    int16_t percentage;
+    
+    /* 边界值处理 */
+    if (rssi_dbm >= -51) {
+        return 100;
+    } else if (rssi_dbm <= -113) {
+        return 0;
+    }
+    
+    /* 线性插值：percentage = (rssi + 113) * 100 / 62 */
+    percentage = ((int16_t)rssi_dbm + 113) * 100 / 62;
+    
+    return (uint8_t)percentage;
+}
+
+/**
+ * @brief 将RSSI信号强度转换为信号等级
+ * @param rssi_dbm 信号强度(dBm)
+ * @return 信号等级 (0-4)
+ *   0 = 无信号或极差
+ *   1 = 较差
+ *   2 = 一般
+ *   3 = 良好
+ *   4 = 优秀
+ */
+static uint8_t rssi_to_level(int8_t rssi_dbm)
+{
+    if (rssi_dbm >= -65) {
+        return 4;  /* 优秀 */
+    } else if (rssi_dbm >= -75) {
+        return 3;  /* 良好 */
+    } else if (rssi_dbm >= -85) {
+        return 2;  /* 一般 */
+    } else if (rssi_dbm >= -95) {
+        return 1;  /* 较差 */
+    } else {
+        return 0;  /* 极差/无信号 */
+    }
+}
+
+/**
+ * @brief 获取信号质量描述字符串
+ * @param rssi_dbm 信号强度(dBm)
+ * @return 信号质量描述字符串
+ */
+static const char* rssi_to_description(int8_t rssi_dbm)
+{
+    if (rssi_dbm >= -65) {
+        return "Excellent";
+    } else if (rssi_dbm >= -75) {
+        return "Good";
+    } else if (rssi_dbm >= -85) {
+        return "Fair";
+    } else if (rssi_dbm >= -95) {
+        return "Poor";
+    } else {
+        return "Very Poor";
+    }
+}
+
 
 
 /**
@@ -204,6 +278,36 @@ bool lte_wait_for_ready(uint32_t timeout_ms)
         
         vTaskDelay(pdMS_TO_TICKS(100));
     }
+}
+
+/**
+ * @brief 将RSSI信号强度(dBm)转换为百分比 (公共接口)
+ * @param rssi_dbm 信号强度(dBm)
+ * @return 信号强度百分比 (0-100%)
+ */
+uint8_t lte_rssi_to_percentage(int8_t rssi_dbm)
+{
+    return rssi_to_percentage(rssi_dbm);
+}
+
+/**
+ * @brief 将RSSI信号强度转换为信号等级 (公共接口)
+ * @param rssi_dbm 信号强度(dBm)
+ * @return 信号等级 (0-4)
+ */
+uint8_t lte_rssi_to_level(int8_t rssi_dbm)
+{
+    return rssi_to_level(rssi_dbm);
+}
+
+/**
+ * @brief 获取信号质量描述字符串 (公共接口)
+ * @param rssi_dbm 信号强度(dBm)
+ * @return 信号质量描述字符串
+ */
+const char* lte_rssi_to_description(int8_t rssi_dbm)
+{
+    return rssi_to_description(rssi_dbm);
 }
 
 /**
@@ -963,8 +1067,14 @@ static void at_callback_signal_quality(const char* resp, AT_Result_t result)
             g_Lte_info.signal_rssi = rssi;
             g_Lte_info.signal_ber = ber;
             
-            /* 同时更新旧的网络信息结构 */
-            LOG_INFO(LOG_MODULE_NETWORK, "Signal: %d dBm, BER: %d", rssi, ber);
+            /* 计算信号强度百分比和等级 */
+            uint8_t signal_percentage = rssi_to_percentage(rssi);
+            uint8_t signal_level = rssi_to_level(rssi);
+            const char* signal_desc = rssi_to_description(rssi);
+            
+            /* 输出详细的信号信息 */
+            LOG_INFO(LOG_MODULE_NETWORK, "Signal: %d dBm (%d%%, Level %d/4, %s), BER: %d", 
+                    rssi, signal_percentage, signal_level, signal_desc, ber);
         }
     }
 }
