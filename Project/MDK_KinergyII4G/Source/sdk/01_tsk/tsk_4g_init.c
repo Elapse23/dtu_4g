@@ -108,8 +108,6 @@ static bool s_lte_module_hardware_initialized = false; /**< LTE模块硬件初�
 /* 队列句柄 */
 static QueueHandle_t s_lte_receive_queue = NULL;        /**< 4G AT响应队列 */
 
-/* 互斥量 */
-static SemaphoreHandle_t s_lte_access_mutex = NULL;    /**< LTE串口访问互斥量，用于与commu_receiver任务互斥 */
 
 /* ============================= 静态函数声明 ============================= */  
 static bool get_network_status(void);
@@ -137,6 +135,19 @@ static bool get_network_status(void)
     
     /* 执行状态查询序列 */
     return at_exec_batch(status_items, status_cmd_count);
+}
+
+/**
+ * @brief 监控网络状态和信号质量
+ * @details 定期调用此函数以监控网络连接状态和信号强度
+ */
+static void monitor_network_status(void)
+{
+    LOG_DEBUG(LOG_MODULE_NETWORK, "Monitoring network status...");
+    
+    if (!get_network_status()) {
+        LOG_WARN(LOG_MODULE_NETWORK, "Failed to get network status");
+    }
 }
 
 
@@ -205,7 +216,7 @@ LteInitConfig_t lte_get_default_config(void)
         .init_timeout_ms = 60000,           // 60秒初始化超时
         .at_response_timeout_ms = 5000,     // 5秒AT响应超时
         .max_retry_count = 3,               // 最多重试3次
-        .auto_register = false,              // 自动注册网络 true
+        .auto_register = true,              // 自动注册网络 true
         .enable_echo = false,               // 禁用回显
         .apn = "3gnet",                     // 默认APN
         .username = "",                     // 无用户名
@@ -235,6 +246,37 @@ BaseType_t lte_reinitialize(void)
 }
 
 /**
+ * @brief 将字符串中的\r\n转换为可见字符串
+ * @param src 源字符串
+ * @param dst 目标缓冲区
+ * @param dst_size 目标缓冲区大小
+ */
+static void convert_crlf_to_visible(const char* src, char* dst, size_t dst_size)
+{
+    size_t src_idx = 0;
+    size_t dst_idx = 0;
+    
+    if (!src || !dst || dst_size == 0) {
+        return;
+    }
+    
+    while (src[src_idx] != '\0' && dst_idx < (dst_size - 3)) {
+        if (src[src_idx] == '\r') {
+            dst[dst_idx++] = '\\';
+            dst[dst_idx++] = 'r';
+            src_idx++;
+        } else if (src[src_idx] == '\n') {
+            dst[dst_idx++] = '\\';
+            dst[dst_idx++] = 'n';
+            src_idx++;
+        } else {
+            dst[dst_idx++] = src[src_idx++];
+        }
+    }
+    dst[dst_idx] = '\0';
+}
+
+/**
  * @brief 获取AT指令响应数据 - 直接从串口获取，与commu_receiver任务互斥
  * @details 使用互斥量确保与commu_receiver任务对串口的互斥访问，
  *          直接从串口缓冲区读取AT指令响应数据
@@ -251,113 +293,65 @@ static bool get_response_data(char* response_buffer, size_t buffer_size, uint32_
     TickType_t timeout_ticks = pdMS_TO_TICKS(timeout_ms);
     
     /* 参数有效性检查 */
-    if (!response_buffer || buffer_size == 0) {
+    if (!response_buffer || buffer_size == 0) 
+    {
         LOG_ERROR(LOG_MODULE_NETWORK, "Invalid parameters for get_response_data");
         return false;
     }
-    
-    /* 检查互斥量是否已初始化 */
-    if (!s_lte_access_mutex) {
-        LOG_ERROR(LOG_MODULE_NETWORK, "LTE access mutex not initialized");
-        return false;
-    }
-    
     /* 清空响应缓冲区 */
-    memset(response_buffer, 0, buffer_size);
-    
-    /* 临时绕过互斥量检查，直接读取数据 */
-    bool mutex_acquired = false;
-    if (s_lte_access_mutex) {
-        /* 获取LTE串口访问互斥量，确保与commu_receiver任务互斥 */
-        if (xSemaphoreTake(s_lte_access_mutex, timeout_ticks) == pdTRUE) {
-            mutex_acquired = true;
-            LOG_DEBUG(LOG_MODULE_NETWORK, "Acquired LTE mutex, reading response from UART (timeout: %dms)", timeout_ms);
-        } else {
-            LOG_ERROR(LOG_MODULE_NETWORK, "Failed to acquire LTE access mutex for response reading");
-        }
-    } else {
-        LOG_WARN(LOG_MODULE_NETWORK, "LTE access mutex not initialized, proceeding without mutex");
-    }
-    
+    memset(response_buffer, 0, buffer_size);   
     /* 主要读取循环 - 直接从串口读取数据 */
-    while ((xTaskGetTickCount() - start_tick) < timeout_ticks) {
-        
+    while ((xTaskGetTickCount() - start_tick) < timeout_ticks) 
+    {
         /* 检查串口是否有可用数据 */
         uint32_t available_bytes = uart_get_available_bytes(UART_ID_LTE);
-        
-        if (available_bytes > 0) {
+        if (available_bytes > 0) 
+        {
             /* 限制读取长度 */
             uint16_t bytes_to_read = (available_bytes > (buffer_size - 1)) ? 
                                     (buffer_size - 1) : available_bytes;
-            
             /* 直接从串口环形缓冲区读取数据 */
             UART_Status_t uart_result = uart_receive(UART_ID_LTE, 
                                                      (uint8_t*)response_buffer, 
                                                      bytes_to_read, 
                                                      100);
             
-            if (uart_result == UART_OK && bytes_to_read > 0) {
+            if (uart_result == UART_OK && bytes_to_read > 0) 
+            {
                 /* 确保字符串结束 */
                 response_buffer[bytes_to_read] = '\0';
                 
-                LOG_INFO(LOG_MODULE_NETWORK, "LTE response received from UART: [%.*s] (%d bytes)", 
-                        (int)bytes_to_read, response_buffer, bytes_to_read);
+                /* 转换换行符为可见字符串用于日志显示 */
+                char visible_buffer[1024];
+                convert_crlf_to_visible(response_buffer, visible_buffer, sizeof(visible_buffer));
+                
+                LOG_INFO(LOG_MODULE_NETWORK, "LTE response received from UART: [%s] (%d bytes)", 
+                        visible_buffer, bytes_to_read);
                 
                 result = true;
                 break;
             }
         }
-        
         /* 短暂延时避免过度消耗CPU */
         vTaskDelay(pdMS_TO_TICKS(10));
-    }
-    
-    /* 释放LTE串口访问互斥量 */
-    if (mutex_acquired) {
-        xSemaphoreGive(s_lte_access_mutex);
-    }
-    
+    }    
     /* 记录结果 */
     uint32_t elapsed_ms = (xTaskGetTickCount() - start_tick) * portTICK_PERIOD_MS;
-    if (result) {
+    if (result) 
+    {
         LOG_INFO(LOG_MODULE_NETWORK, "Successfully received LTE response in %dms", elapsed_ms);
-    } else {
+    } 
+    else 
+    {
         LOG_WARN(LOG_MODULE_NETWORK, "LTE response timeout after %dms", elapsed_ms);
     }
     
     return result;
 }
 
-/**
- * @brief 获取LTE串口访问互斥量 - 供其他任务使用
- * @details 确保多个任务对LTE串口访问的同步，防止数据竞争
- * 
- * @param timeout_ms 获取超时时间（毫秒）
- * @return bool 是否成功获取互斥量
- */
-bool acquire_lte_access_mutex(uint32_t timeout_ms)
-{
-    if (!s_lte_access_mutex) {
-        LOG_ERROR(LOG_MODULE_NETWORK, "LTE access mutex not initialized");
-        return false;
-    }
-    
-    TickType_t timeout_ticks = (timeout_ms == portMAX_DELAY) ? 
-                              portMAX_DELAY : pdMS_TO_TICKS(timeout_ms);
-    
-    BaseType_t result = xSemaphoreTake(s_lte_access_mutex, timeout_ticks);
-    return (result == pdTRUE);
-}
 
-/**
- * @brief 释放LTE串口访问互斥量
- */
-void release_lte_access_mutex(void)
-{
-    if (s_lte_access_mutex) {
-        xSemaphoreGive(s_lte_access_mutex);
-    }
-}
+
+
 
 
 
@@ -375,55 +369,60 @@ static AT_Result_t at_exec_core(const AT_Cmd_Config_t* cmd_config, const char* d
     AT_Result_t result = AT_RESULT_ERROR;
     uint8_t retry_count = 0;
     
-    if (!cmd_config) {
+    if (!cmd_config) 
+    {
         LOG_ERROR(LOG_MODULE_NETWORK, "AT command config is NULL");
         return AT_RESULT_ERROR;
     }
     
-    /* 生成命令显示字符串 */
-    const char* cmd_display = (cmd_config->at_cmd && strlen(cmd_config->at_cmd) > 0) ? cmd_config->at_cmd : 
-                            (cmd_config->expected_resp && strlen(cmd_config->expected_resp) > 0) ? cmd_config->expected_resp : "Wait";
-    LOG_DEBUG(LOG_MODULE_NETWORK, "Executing AT command: %s %s", cmd_display, debug_info ? debug_info : "");
-    
     /* 特殊处理：仅等待响应，不发送指令 */
-    if (cmd_config->at_cmd == NULL || strlen(cmd_config->at_cmd) == 0) {
-        LOG_DEBUG(LOG_MODULE_NETWORK, "Waiting for module response: %s", 
-                 cmd_config->expected_resp ? cmd_config->expected_resp : "Any");
-        
+    if (cmd_config->at_cmd == NULL || strlen(cmd_config->at_cmd) == 0) 
+    {
         /* 仅等待响应，重试循环 */
-        while (retry_count <= cmd_config->retries) {
+        while (retry_count <= cmd_config->retries) 
+        {
             /* 获取响应 */
-            if (get_response_data(response_buffer, sizeof(response_buffer), cmd_config->timeout_ms)) {
-                LOG_INFO(LOG_MODULE_NETWORK, "Wait response received: [%s]", response_buffer);
+            if (get_response_data(response_buffer, sizeof(response_buffer), cmd_config->timeout_ms)) 
+            {
                 /* 检查期望响应 */
-                if (cmd_config->expected_resp) {
-                    if (strstr(response_buffer, cmd_config->expected_resp) != NULL) {
+                if (cmd_config->expected_resp) 
+                {
+                    if (strstr(response_buffer, cmd_config->expected_resp) != NULL) 
+                    {
                         result = AT_RESULT_OK;
                         LOG_INFO(LOG_MODULE_NETWORK, "Successfully received expected response: %s", cmd_config->expected_resp);
                         
                         /* 特殊处理：RDY信号后需要额外延时让模块完全准备好 */
-                        if (strstr(cmd_config->expected_resp, "RDY") != NULL) {
+                        if (strstr(cmd_config->expected_resp, "RDY") != NULL) 
+                        {
                             LOG_INFO(LOG_MODULE_NETWORK, "RDY signal received, waiting for module to be fully ready...");
                             vTaskDelay(pdMS_TO_TICKS(1000));  // RDY后延时1秒
                         }
                         break;
-                    } else {
+                    } 
+                    else 
+                    {
                         result = AT_RESULT_TIMEOUT;
                         LOG_WARN(LOG_MODULE_NETWORK, "Unexpected response while waiting for: %s", cmd_config->expected_resp);
                     }
-                } else {
+                } 
+                else 
+                {
                     /* 不检查响应内容，有数据即认为成功 */
                     result = AT_RESULT_OK;
                     break;
                 }
-            } else {
+            } 
+            else 
+            {
                 result = AT_RESULT_TIMEOUT;
                 LOG_WARN(LOG_MODULE_NETWORK, "Timeout waiting for response: %s", 
                         cmd_config->expected_resp ? cmd_config->expected_resp : "Any");
             }
             
             retry_count++;
-            if (retry_count <= cmd_config->retries) {
+            if (retry_count <= cmd_config->retries) 
+            {
                 LOG_INFO(LOG_MODULE_NETWORK, "Retrying wait for response (%d/%d): %s", 
                         retry_count, cmd_config->retries, 
                         cmd_config->expected_resp ? cmd_config->expected_resp : "Any");
@@ -432,76 +431,85 @@ static AT_Result_t at_exec_core(const AT_Cmd_Config_t* cmd_config, const char* d
         }
         
         /* 如果重试次数用尽 */
-        if (retry_count > cmd_config->retries && result != AT_RESULT_OK) {
+        if (retry_count > cmd_config->retries && result != AT_RESULT_OK) 
+        {
             result = AT_RESULT_RETRY_EXHAUSTED;
             LOG_ERROR(LOG_MODULE_NETWORK, "Wait for response retry exhausted: %s", 
                      cmd_config->expected_resp ? cmd_config->expected_resp : "Any");
         }
         
         /* 调用回调函数 */
-        if (cmd_config->callback) {
+        if (cmd_config->callback) 
+        {
             cmd_config->callback(response_buffer, result);
         }
         
         return result;
     }
     
-    LOG_INFO(LOG_MODULE_NETWORK, "Executing AT command: [%s]", cmd_config->at_cmd);
+    LOG_INFO(LOG_MODULE_NETWORK, "Executing AT command: %s", cmd_config->at_cmd);
     
     /* 重试循环 */
-    while (retry_count <= cmd_config->retries) {
+    while (retry_count <= cmd_config->retries) 
+    {
         /* 调试：检查AT指令内容是否正常 */
         size_t cmd_len = strlen(cmd_config->at_cmd);
-        LOG_DEBUG(LOG_MODULE_NETWORK, "About to send AT command: [%s], len=%d", 
-                cmd_config->at_cmd, cmd_len);
-        
-        /* 清空LTE发送缓冲区，避免重试时数据累积 */
         uart_flush_tx(UART_ID_LTE);
-        
-        /* 清空LTE接收缓冲区，确保接收到的是当前命令的响应 */
         uart_flush_rx(UART_ID_LTE);
-        
         /* 发送命令 */
         UART_Status_t send_result = uart_send(UART_ID_LTE, (const uint8_t*)cmd_config->at_cmd, 
-                                              strlen(cmd_config->at_cmd), cmd_config->timeout_ms);        
-        if (send_result != UART_OK) {
+                                                strlen(cmd_config->at_cmd), cmd_config->timeout_ms);        
+        if (send_result != UART_OK) 
+        {
             LOG_ERROR(LOG_MODULE_NETWORK, "Failed to send AT command (result: %d): %s", send_result, cmd_config->at_cmd);
             retry_count++;
             continue;
         }
-        
-        LOG_DEBUG(LOG_MODULE_NETWORK, "AT command sent successfully, waiting for response...");
-        
         /* 获取响应 */
-        if (get_response_data(response_buffer, sizeof(response_buffer), cmd_config->timeout_ms)) {
-            LOG_INFO(LOG_MODULE_NETWORK, "AT command response received: [%s]", response_buffer);
+        if (get_response_data(response_buffer, sizeof(response_buffer), cmd_config->timeout_ms)) 
+        {
+            /* 转换换行符为可见字符串用于日志显示 */
+            char visible_buffer[1024];
+            convert_crlf_to_visible(response_buffer, visible_buffer, sizeof(visible_buffer));
             
+            LOG_INFO(LOG_MODULE_NETWORK, "AT command response received: [%s]", visible_buffer);
             /* 检查期望响应 */
-            if (cmd_config->expected_resp) {
-                if (strstr(response_buffer, cmd_config->expected_resp) != NULL) {
+            if (cmd_config->expected_resp) 
+            {
+                if (strstr(response_buffer, cmd_config->expected_resp) != NULL) 
+                {
                     result = AT_RESULT_OK;
                     LOG_INFO(LOG_MODULE_NETWORK, "AT command successful: %s", cmd_config->at_cmd);
                     break;
-                } else if (strstr(response_buffer, "ERROR") != NULL) {
+                } 
+                else if (strstr(response_buffer, "ERROR") != NULL) 
+                {
                     result = AT_RESULT_ERROR;
                     LOG_WARN(LOG_MODULE_NETWORK, "AT command returned ERROR: %s", cmd_config->at_cmd);
-                } else {
+                } 
+                else 
+                {
                     result = AT_RESULT_TIMEOUT;
                     LOG_WARN(LOG_MODULE_NETWORK, "AT command unexpected response: %s", cmd_config->at_cmd);
                 }
-            } else {
+            } 
+            else 
+            {
                 /* 不检查响应，认为成功 */
                 result = AT_RESULT_OK;
                 LOG_INFO(LOG_MODULE_NETWORK, "AT command completed (no response check): %s", cmd_config->at_cmd);
                 break;
             }
-        } else {
+        } 
+        else 
+        {
             result = AT_RESULT_TIMEOUT;
             LOG_WARN(LOG_MODULE_NETWORK, "AT command timeout, retry count: %d", retry_count);
         }
         
         retry_count++;
-        if (retry_count <= cmd_config->retries) {
+        if (retry_count <= cmd_config->retries) 
+        {
             LOG_INFO(LOG_MODULE_NETWORK, "Retrying AT command (%d/%d): %s", 
                     retry_count, cmd_config->retries, cmd_config->at_cmd);
             vTaskDelay(pdMS_TO_TICKS(1000));  // 重试前延时
@@ -509,12 +517,14 @@ static AT_Result_t at_exec_core(const AT_Cmd_Config_t* cmd_config, const char* d
     }
     
     /* 如果重试次数用尽 */
-    if (retry_count > cmd_config->retries && result != AT_RESULT_OK) {
+    if (retry_count > cmd_config->retries && result != AT_RESULT_OK)
+    {
         result = AT_RESULT_RETRY_EXHAUSTED;
     }
     
     /* 调用回调函数 */
-    if (cmd_config->callback) {
+    if (cmd_config->callback) 
+    {
         cmd_config->callback(response_buffer, result);
     }
     
@@ -1196,7 +1206,6 @@ static void perform_initialization_sequence(void)
             {AT_CMD_SET_FULL_FUNC, AT_TYPE_SET},      /* 设置全功能模式 */
             {AT_CMD_GET_VERSION,   AT_TYPE_BASIC},    /* 获取版本信息 */
             {AT_CMD_GET_IMEI,      AT_TYPE_EXECUTE},  /* 获取IMEI */
-            {AT_CMD_GET_ICCID,     AT_TYPE_QUERY},    /* 获取ICCID */
             {AT_CMD_GET_IMSI,      AT_TYPE_EXECUTE},  /* 获取IMSI */
             {AT_CMD_CHECK_SIM,     AT_TYPE_QUERY}     /* 检查SIM卡状态 */
         };
@@ -1229,9 +1238,9 @@ static void perform_initialization_sequence(void)
                 /* 根据重试次数采用不同的重启策略 */
                 if (retry_count >= 4) {  /* 前四次失败后尝试软件重启 */
                     LOG_WARN(LOG_MODULE_NETWORK, "Initialization failed %d times, attempting soft reset", retry_count);
-                    if (!perform_module_reset(true)) {  /* TODO  执行软件重启  全都执行硬件重启,软件重启将true改为false即可*/
-                        LOG_ERROR(LOG_MODULE_NETWORK, "Soft reset failed, will try hard reset next");
-                    }
+                    // if (!perform_module_reset(true)) {  /* TODO  执行软件重启  全都执行硬件重启,软件重启将true改为false即可*/
+                    //     LOG_ERROR(LOG_MODULE_NETWORK, "Soft reset failed, will try hard reset next");
+                    // }
                 } else {
                     LOG_WARN(LOG_MODULE_NETWORK, "Initialization failed, retrying... (%d/%d)", 
                             retry_count, s_init_config.max_retry_count);
@@ -1240,18 +1249,18 @@ static void perform_initialization_sequence(void)
             } else {
                 /* 所有常规重试都失败，尝试硬件重启作为最后手段 */
                 LOG_ERROR(LOG_MODULE_NETWORK, "All initialization attempts failed, attempting hard reset");
-                if (s_hard_reset_count < MAX_HARD_RESET_COUNT) {
-                    if (perform_module_reset(true)) {  /* 执行硬件重启 */
-                        /* 硬件重启成功，重置重试计数器进行最后一次尝试 */
-                        retry_count = 0;
-                        LOG_INFO(LOG_MODULE_NETWORK, "Hard reset completed, restarting initialization");
-                        vTaskDelay(pdMS_TO_TICKS(MODULE_RESET_WAIT_MS));
-                    } else {
-                        LOG_ERROR(LOG_MODULE_NETWORK, "Hard reset failed");
-                    }
-                } else {
-                    LOG_ERROR(LOG_MODULE_NETWORK, "Maximum hard reset count exceeded, stopping attempts");
-                }
+                // if (s_hard_reset_count < MAX_HARD_RESET_COUNT) {
+                //     if (perform_module_reset(true)) {  /* 执行硬件重启 */
+                //         /* 硬件重启成功，重置重试计数器进行最后一次尝试 */
+                //         retry_count = 0;
+                //         LOG_INFO(LOG_MODULE_NETWORK, "Hard reset completed, restarting initialization");
+                //         vTaskDelay(pdMS_TO_TICKS(MODULE_RESET_WAIT_MS));
+                //     } else {
+                //         LOG_ERROR(LOG_MODULE_NETWORK, "Hard reset failed");
+                //     }
+                // } else {
+                //     LOG_ERROR(LOG_MODULE_NETWORK, "Maximum hard reset count exceeded, stopping attempts");
+                // }
             }
         }
     }
@@ -1299,7 +1308,8 @@ static void vLteInitTask(void* pvParameters)
     /* 首先执行LTE硬件初始化（在任务中执行，避免阻塞主线程） */
     if (!s_lte_module_hardware_initialized) {
         LOG_INFO(LOG_MODULE_NETWORK, "Initializing LTE module hardware...");
-        lte_4g_module_hardware_reset();
+        // lte_4g_module_hardware_reset();
+        lte_4g_module_hardware_open();
         s_lte_module_hardware_initialized = true;
         LOG_INFO(LOG_MODULE_NETWORK, "LTE module hardware initialized successfully");
     }
@@ -1310,22 +1320,23 @@ static void vLteInitTask(void* pvParameters)
     
     /* 任务主循环 - 状态监控和维护 */
     while (1) {
-        // TickType_t current_time = xTaskGetTickCount();
+        TickType_t current_time = xTaskGetTickCount();
         
-        // /* 定期检查网络状态（仅在模块就绪后） */
-        // if ((current_time - last_status_check) >= pdMS_TO_TICKS(STATUS_CHECK_INTERVAL_MS)) {
-        //     if (s_current_state >= LTE_STATE_READY) {
-        //         monitor_network_status();  /* 监控网络状态和信号质量 */
-        //     }
-        //     last_status_check = current_time;
-        // }
+        /* 定期检查网络状态（仅在模块就绪后） */
+        if ((current_time - last_status_check) >= pdMS_TO_TICKS(STATUS_CHECK_INTERVAL_MS)) {
+            if (s_current_state >= LTE_STATE_READY) {
+                monitor_network_status();  /* 监控网络状态和信号质量 */
+            }
+            last_status_check = current_time;
+        }
         
-        // /* 错误状态自动恢复机制 */
-        // if (s_current_state == LTE_STATE_ERROR) {
-        //     LOG_WARN(LOG_MODULE_NETWORK, "4G module in error state, attempting reinitialize");
-        //     vTaskDelay(pdMS_TO_TICKS(INIT_RETRY_DELAY_MS));  /* 等待后重试 */
-        //     perform_initialization_sequence();  /* 重新执行初始化 */
-        // }
+        /* 错误状态自动恢复机制 */
+        if (s_current_state == LTE_STATE_ERROR) {
+            LOG_WARN(LOG_MODULE_NETWORK, "4G module in error state, attempting reinitialize");
+            vTaskDelay(pdMS_TO_TICKS(INIT_RETRY_DELAY_MS));  /* 等待后重试 */
+            perform_initialization_sequence();  /* 重新执行初始化 */
+        }
+        
         /* 任务循环延时，避免占用过多CPU资源 */
         vTaskDelay(pdMS_TO_TICKS(100));
     }
@@ -1349,13 +1360,7 @@ static void cleanup_resources(uint16_t cleanup_mask)
         s_data_receive_task_handle = NULL;
     }
     
-    /* 清理互斥量 */
-    if (cleanup_mask & CLEANUP_MUTEXES) {
-        if (s_lte_access_mutex) {
-            vSemaphoreDelete(s_lte_access_mutex);
-            s_lte_access_mutex = NULL;
-        }
-    }
+
 }
 
 /**
@@ -1389,13 +1394,7 @@ BaseType_t lte_init(const LteInitConfig_t* config)
         return pdFAIL;
     }
 
-    /* 创建LTE访问互斥量 - 用于与commu_receiver任务互斥访问串口 */
-    s_lte_access_mutex = xSemaphoreCreateMutex();
-    if (!s_lte_access_mutex) {
-        LOG_ERROR(LOG_MODULE_NETWORK, "Failed to create LTE access mutex");
-        cleanup_resources(CLEANUP_DATA_QUEUE | CLEANUP_AT_QUEUE);
-        return pdFAIL;
-    }
+
 
     /* 创建初始化任务 */
     result = xTaskCreate(vLteInitTask, "LteInit", INIT_TASK_STACK_SIZE,

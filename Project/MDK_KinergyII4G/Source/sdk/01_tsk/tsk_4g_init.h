@@ -23,7 +23,7 @@
 #define INIT_TASK_PRIORITY          (tskIDLE_PRIORITY + 4)          /**< 初始化任务优先级 */
 #define AT_COMMAND_TIMEOUT_MS       5000                            /**< AT指令默认超时时间 */
 #define INIT_RETRY_DELAY_MS         500                            /**< 初始化重试间隔时间 */
-#define STATUS_CHECK_INTERVAL_MS    10000                           /**< 状态检查间隔时间 */
+#define STATUS_CHECK_INTERVAL_MS    60 * 10000                     /**< 状态检查间隔时间 */
 
 /* 模块重启相关参数 */
 #define MODULE_RESET_PULSE_MS       100     /**< 硬件重启脉冲持续时间（毫秒） */
@@ -300,24 +300,8 @@ bool lte_wait_for_ready(uint32_t timeout_ms);
 
 /* ============================= 互斥访问接口 ============================= */
 
-/**
- * @brief 获取LTE串口访问互斥量 - 供其他任务使用
- * @details 确保多个任务对LTE串口访问的同步，防止数据竞争
- * 
- * @param timeout_ms 获取超时时间（毫秒）
- * @return bool 是否成功获取互斥量
- * 
- * @note 获取成功后必须调用 release_lte_access_mutex() 释放
- */
-bool acquire_lte_access_mutex(uint32_t timeout_ms);
 
-/**
- * @brief 释放LTE串口访问互斥量
- * @details 释放之前通过 acquire_lte_access_mutex() 获取的互斥量
- * 
- * @note 只能在成功获取互斥量的任务中调用
- */
-void release_lte_access_mutex(void);
+
 
 /**
  * @brief 执行单个AT指令（通过配置）

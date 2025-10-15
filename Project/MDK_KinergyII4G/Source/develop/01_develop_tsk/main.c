@@ -29,6 +29,8 @@
 #include "bsp_uart_ring_buffer.h"
 #include "lte_module_init.h"
 
+
+
 /**
  * @brief 配置系统时钟到144MHz
  * @return true: 配置成功, false: 配置失败
@@ -142,7 +144,7 @@ int main(void)
 void hardware_init()
 {
     /* remap debug port to SWD only (release pins) */
-    bsp_debug_port_remap_swd_only();
+    // bsp_debug_port_remap_swd_only();
 
     /* Initialize peripherals used by main application */
     Flash_Init();            /* SPI flash */
@@ -171,13 +173,20 @@ void hardware_init()
     led_init();
 }
 
+
+
 // Simple LED task implementation used by main integration
 static void vLedTask(void* pvParameters)
 {
-    (void)pvParameters;    
+    (void)pvParameters;
+    
+    SYS_LOG_INFO("LED and communication send task started");
+    
     for (;;) {
-        /* call LED handler - implementation in led.c */
-        led_flash();        
+        /* LED heartbeat */
+        led_flash();
+        
+        /* Simple communication send handling - could be expanded */
         vTaskDelay(3 * 1000);
     }
 }

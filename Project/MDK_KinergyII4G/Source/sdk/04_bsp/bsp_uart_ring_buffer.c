@@ -19,28 +19,22 @@
 #include <string.h>
 #include <stdio.h>
 
-/* 外部变量声明 - LTE数据监控标志 */
-extern bool s_lte_monitor_enabled;
-
-// NOTE: 2025-09 已移除LOG<->LTE转发功能，相关标志删除。
-
 // 静态缓冲区数组
 static uint8_t rs485_rx_buffer_storage[UART_RX_BUFFER_SIZE];
 static uint8_t rs485_tx_buffer_storage[UART_TX_BUFFER_SIZE];
-// static uint8_t lte_rx_buffer_storage[UART_RX_BUFFER_SIZE * 5];
-// static uint8_t lte_tx_buffer_storage[UART_TX_BUFFER_SIZE * 5];
 static uint8_t log_rx_buffer_storage[UART_RX_BUFFER_SIZE];
 static uint8_t log_tx_buffer_storage[UART_TX_BUFFER_SIZE];
 uint8_t lte_rx_buffer_storage[UART_RX_BUFFER_SIZE * 5];
 uint8_t lte_tx_buffer_storage[UART_TX_BUFFER_SIZE * 5];
 
-// 调试用静态变量
-static uint32_t s_lte_irq_count = 0;  // LTE中断计数器
-static uint32_t s_lte_send_count = 0; // LTE发送字节计数器
-static uint32_t s_lte_write_ok_count = 0; // LTE成功写入环形缓冲区计数
-static uint32_t s_lte_write_fail_count = 0; // LTE写入环形缓冲区失败计数
-static uint8_t s_lte_debug_bytes[8]; // LTE最近接收的调试数据
-static uint32_t s_lte_debug_index = 0; // 调试数据索引
+// 发送中断相关状态变量
+typedef enum {
+    TX_STATE_IDLE = 0,          // 发送空闲
+    TX_STATE_BUSY,              // 发送进行中
+    TX_STATE_COMPLETE           // 发送完成
+} TX_State_t;
+
+static TX_State_t s_tx_states[UART_COUNT] = {TX_STATE_IDLE}; // 各串口发送状态
 
 // 串口设备实例
 static UART_RingBuffer_t uart_devices[UART_COUNT];
@@ -152,6 +146,14 @@ UART_Status_t uart_init(UART_ID_t uart_id, uint32_t baudrate) {
         return UART_ERR_INIT;
     }
     
+    // 初始化发送状态
+    s_tx_states[uart_id] = TX_STATE_IDLE;
+    
+    // 配置串口中断（接收中断默认启用，发送中断按需启用）
+    USART_Module* USARTx = (USART_Module*)uart_dev->uart_instance;
+    USART_ConfigInt(USARTx, USART_INT_RXDNE, ENABLE);  // 启用接收中断
+    // 注意：发送中断将在需要发送数据时动态启用
+    
     uart_dev->is_initialized = true;
     return UART_OK;
 }
@@ -193,130 +195,159 @@ UART_Status_t uart_deinit(UART_ID_t uart_id) {
 
 /**
  * @brief 发送数据（阻塞方式）
+ * @param uart_id       串口ID
+ * @param data          要发送的数据指针
+ * @param length        数据长度
+ * @param timeout_ms    超时时间（毫秒）
+ * @return UART_Status_t 发送状态
  */
-UART_Status_t uart_send(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms) {
+UART_Status_t uart_send(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms) 
+{
+    // 1. 参数有效性检查
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
-    if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) {
+    if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) 
+    {
         return UART_ERR_PARAM;
-    }    
-    // 增加信号量有效性检查
-    if (!uart_dev->tx_mutex || !uart_dev->tx_complete_semaphore) {
+    }
+    if (!uart_dev->tx_mutex || !uart_dev->tx_complete_semaphore) 
+    {
         return UART_ERR_INIT;
     }
-    
-    // 检查 FreeRTOS 调度器状态
+    // 2. 检查调度器状态，决定发送方式
     BaseType_t scheduler_state = xTaskGetSchedulerState();
-    if (scheduler_state == taskSCHEDULER_NOT_STARTED) {
-        // 调度器未启动，使用轮询方式发送
+    if (scheduler_state == taskSCHEDULER_NOT_STARTED) 
+    {
         return send_polling(uart_id, data, length, timeout_ms);
-    } else if (scheduler_state != taskSCHEDULER_RUNNING) {
+    } 
+    else if (scheduler_state != taskSCHEDULER_RUNNING) 
+    {
         return UART_ERR_INIT;
     }
-
-    // 限制超时时间范围，防止溢出
-    if (timeout_ms > 60000) {  // 最大60秒
-        timeout_ms = 60000;
-    }
-    
-    // 获取发送互斥锁
-    if (xSemaphoreTake(uart_dev->tx_mutex, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) {
-        UART_LOG_INFO("UART %d send busy", uart_id);
+    // 3. 检查串口发送状态
+    if (s_tx_states[uart_id] == TX_STATE_BUSY) 
+    {
         return UART_ERR_TIMEOUT;
     }
+    // 4. 获取发送互斥锁
+    if (xSemaphoreTake(uart_dev->tx_mutex, pdMS_TO_TICKS(timeout_ms)) != pdTRUE) 
+    {
+        UART_LOG_INFO("UART %d send busy", uart_id);
+        return UART_ERR_TIMEOUT;
+    }   
     UART_Status_t result = UART_OK;
-
-    // RS485需要切换到发送模式
-    if (uart_id == UART_ID_RS485) {
+    USART_Module* USARTx = (USART_Module*)uart_dev->uart_instance;
+    // 5. RS485切换到发送模式
+    if (uart_id == UART_ID_RS485) 
+    {
         RS485_DIR_TX();
     }
-    
-    // 启动发送 - 简化为直接轮询发送，避免缓冲区竞争条件
-    USART_Module* USARTx = (USART_Module*)uart_dev->uart_instance;
-    
-    // LTE调试：记录发送数据
-    if (uart_id == UART_ID_LTE) {
-        // 注意：由于在互斥锁内，这里应该避免使用可能导致任务切换的LOG函数
-        // 但为了调试，我们记录一下发送的字节数
-        s_lte_send_count += length;
-        
-        // 如果启用了LTE监控，将数据同步发送到LOG串口
-        if (s_lte_monitor_enabled) {
-            // 发送数据到LOG串口 - 使用轮询方式避免任务切换
-            send_polling(UART_ID_LOG, data, length, 1000);
+    // 6. 将数据写入发送环形缓冲区
+    uint32_t written = 0;
+    for (uint32_t i = 0; i < length; i++) 
+    {
+        if (ring_buffer_write(&uart_dev->tx_ring_buffer, &data[i]) == RB_OK) 
+        {
+            written++;
+        } 
+        else 
+        {
+            result = UART_ERR_BUFFER_FULL;
+            break;
         }
     }
-    
-    for (uint32_t i = 0; i < length; i++) {
-        // 等待发送数据寄存器空中断标志位
-        while (USART_GetFlagStatus(USARTx, USART_FLAG_TXDE) == RESET);
-        USART_SendData(USARTx, data[i]);
+    // 7. 启动中断发送并等待完成
+    if (written > 0) 
+    {
+        // 设置发送状态并启用中断
+        s_tx_states[uart_id] = TX_STATE_BUSY;
+        USART_ConfigInt(USARTx, USART_INT_TXC, ENABLE);
+        // 发送第一个字节启动发送过程
+        uint8_t first_byte;
+        if (ring_buffer_read(&uart_dev->tx_ring_buffer, &first_byte) == RB_OK) 
+        {
+            USART_SendData(USARTx, first_byte);
+        }
+        // 等待发送完成
+        if (xSemaphoreTake(uart_dev->tx_complete_semaphore, pdMS_TO_TICKS(timeout_ms)) == pdTRUE) 
+        {
+            s_tx_states[uart_id] = TX_STATE_IDLE;
+        } 
+        else 
+        {
+            // 发送超时处理
+            s_tx_states[uart_id] = TX_STATE_IDLE;
+            USART_ConfigInt(USARTx, USART_INT_TXC, DISABLE);
+            ring_buffer_clear(&uart_dev->tx_ring_buffer);
+            result = UART_ERR_TIMEOUT;
+        }
     }
-    // 等待传输完成标志 (确保最后一个字节完全发送出去)
-    while (USART_GetFlagStatus(USARTx, USART_FLAG_TXC) == RESET);
-
-
-    // RS485发送完成后切换回接收模式
-    if (uart_id == UART_ID_RS485) {
-        // 等待发送完全完成
-        while (USART_GetFlagStatus((USART_Module*)uart_dev->uart_instance, USART_FLAG_TXC) == RESET);
+    // 8. RS485切换回接收模式
+    if (uart_id == UART_ID_RS485) 
+    {
+        while (USART_GetFlagStatus(USARTx, USART_FLAG_TXC) == RESET);
         RS485_DIR_RX();
     }
-    
-    // 释放互斥锁
+    // 9. 释放互斥锁
     xSemaphoreGive(uart_dev->tx_mutex);
-    
     return result;
 }
 
 /**
  * @brief 轮询方式发送数据（用于调度器未启动时）
  */
-static UART_Status_t send_polling(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms) {
+static UART_Status_t send_polling(UART_ID_t uart_id, const uint8_t* data, uint32_t length, uint32_t timeout_ms) 
+{
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
-    if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) {
+    if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) 
+    {
         return UART_ERR_PARAM;
     }
     
     USART_Module* USARTx = (USART_Module*)uart_dev->uart_instance;
     
     // RS485需要切换到发送模式
-    if (uart_id == UART_ID_RS485) {
+    if (uart_id == UART_ID_RS485) 
+    {
         RS485_DIR_TX();
     }
     
     // 逐字节发送
-    for (uint32_t i = 0; i < length; i++) {
+    for (uint32_t i = 0; i < length; i++) 
+    {
         // 等待发送缓冲区空
         uint32_t timeout_count = timeout_ms * 1000; // 粗略的超时计数
-        while (USART_GetFlagStatus(USARTx, USART_FLAG_TXDE) == RESET) {
-            if (timeout_count-- == 0) {
-                if (uart_id == UART_ID_RS485) {
+        while (USART_GetFlagStatus(USARTx, USART_FLAG_TXDE) == RESET) 
+        {
+            if (timeout_count-- == 0) 
+            {
+                if (uart_id == UART_ID_RS485) 
+                {
                     RS485_DIR_RX();
                 }
                 return UART_ERR_TIMEOUT;
             }
         }
-        
         // 发送字节
         USART_SendData(USARTx, data[i]);
     }
-    
     // 等待发送完成
     uint32_t timeout_count = timeout_ms * 1000;
-    while (USART_GetFlagStatus(USARTx, USART_FLAG_TXC) == RESET) {
-        if (timeout_count-- == 0) {
-            if (uart_id == UART_ID_RS485) {
+    while (USART_GetFlagStatus(USARTx, USART_FLAG_TXC) == RESET) 
+    {
+        if (timeout_count-- == 0) 
+        {
+            if (uart_id == UART_ID_RS485) 
+            {
                 RS485_DIR_RX();
             }
             return UART_ERR_TIMEOUT;
         }
     }
-    
     // RS485发送完成后切换回接收模式
-    if (uart_id == UART_ID_RS485) {
+    if (uart_id == UART_ID_RS485) 
+    {
         RS485_DIR_RX();
     }
-    
     return UART_OK;
 }
 
@@ -325,7 +356,8 @@ static UART_Status_t send_polling(UART_ID_t uart_id, const uint8_t* data, uint32
  */
 UART_Status_t uart_receive(UART_ID_t uart_id, uint8_t* data, uint32_t length, uint32_t timeout_ms) {
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
-    if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) {
+    if (!uart_dev || !uart_dev->is_initialized || !data || length == 0) 
+    {
         return UART_ERR_PARAM;
     }
     
@@ -333,19 +365,25 @@ UART_Status_t uart_receive(UART_ID_t uart_id, uint8_t* data, uint32_t length, ui
     TickType_t start_time = xTaskGetTickCount();
     TickType_t timeout_ticks = pdMS_TO_TICKS(timeout_ms);
     
-    while (received < length) {
+    while (received < length) 
+    {
         // 尝试从环形缓冲区读取数据
-        if (ring_buffer_read(&uart_dev->rx_ring_buffer, &data[received]) == RB_OK) {
+        if (ring_buffer_read(&uart_dev->rx_ring_buffer, &data[received]) == RB_OK) 
+        {
             received++;
-        } else {
+        } 
+        else 
+        {
             // 没有数据，等待接收信号量
             TickType_t elapsed = xTaskGetTickCount() - start_time;
-            if (elapsed >= timeout_ticks) {
+            if (elapsed >= timeout_ticks) 
+            {
                 return UART_ERR_TIMEOUT;
             }
             
             TickType_t remaining = timeout_ticks - elapsed;
-            if (xSemaphoreTake(uart_dev->rx_semaphore, remaining) != pdTRUE) {
+            if (xSemaphoreTake(uart_dev->rx_semaphore, remaining) != pdTRUE) 
+            {
                 return UART_ERR_TIMEOUT;
             }
         }
@@ -371,28 +409,22 @@ UART_Status_t uart_read_byte(UART_ID_t uart_id, uint8_t* data) {
 }
 
 /**
- * @brief LTE调试统计信息获取
+ * @brief 获取串口发送状态
+ * @param uart_id 串口ID
+ * @return true=发送忙碌中, false=发送空闲
  */
-uint32_t uart_get_lte_irq_count(void) { return s_lte_irq_count; }
-uint32_t uart_get_lte_send_count(void) { return s_lte_send_count; }
-
-void uart_get_lte_write_stats(uint32_t* write_ok, uint32_t* write_fail) {
-    if (write_ok) *write_ok = s_lte_write_ok_count;
-    if (write_fail) *write_fail = s_lte_write_fail_count;
-}
-
-uint32_t uart_get_lte_debug_data(uint8_t* debug_data) {
-    if (debug_data && s_lte_write_ok_count > 0) {
-        memcpy(debug_data, s_lte_debug_bytes, 8);
-        return (s_lte_write_ok_count > 8) ? 8 : s_lte_write_ok_count;
+bool uart_is_tx_busy(UART_ID_t uart_id) {
+    if (uart_id >= UART_COUNT) {
+        return false;
     }
-    return 0;
+    return (s_tx_states[uart_id] == TX_STATE_BUSY);
 }
 
 /**
  * @brief 获取接收缓冲区中可读取的字节数
  */
-uint32_t uart_get_available_bytes(UART_ID_t uart_id) {
+uint32_t uart_get_available_bytes(UART_ID_t uart_id) 
+{
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
     return (uart_dev && uart_dev->is_initialized) ? uart_dev->rx_ring_buffer.count : 0;
 }
@@ -426,9 +458,11 @@ UART_Status_t uart_flush_tx(UART_ID_t uart_id) {
 /**
  * @brief 串口中断处理函数
  */
-void uart_irq_handler(UART_ID_t uart_id) {
+void uart_irq_handler(UART_ID_t uart_id) 
+{
     UART_RingBuffer_t* uart_dev = get_uart_device(uart_id);
-    if (!uart_dev || !uart_dev->is_initialized) {
+    if (!uart_dev || !uart_dev->is_initialized) 
+    {
         return;
     }
     
@@ -436,31 +470,46 @@ void uart_irq_handler(UART_ID_t uart_id) {
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
     
     // 处理接收中断
-    if (USART_GetIntStatus(USARTx, USART_INT_RXDNE) == SET) {
+    if (USART_GetIntStatus(USARTx, USART_INT_RXDNE) == SET) 
+    {
         uint8_t received_byte = USART_ReceiveData(USARTx);
         
-        // LTE串口调试计数
-        if (uart_id == UART_ID_LTE) {
-            s_lte_irq_count++;
-        }
-        
         // 将接收到的字节写入环形缓冲区
-        RB_Status rb_result = ring_buffer_write_from_isr(&uart_dev->rx_ring_buffer, &received_byte, &xHigherPriorityTaskWoken);
-        if (rb_result == RB_OK) {
-            // 写入成功
-            if (uart_id == UART_ID_LTE) {
-                s_lte_write_ok_count++;
-                // 记录最新接收的几个字节用于调试
-                s_lte_debug_bytes[s_lte_debug_index] = received_byte;
-                s_lte_debug_index = (s_lte_debug_index + 1) % 8;
-            }
+        RB_Status rb_result = ring_buffer_write_from_isr(&uart_dev->rx_ring_buffer, &received_byte);
+        if (rb_result == RB_OK) 
+        {
             // 通知有新数据到达
             xSemaphoreGiveFromISR(uart_dev->rx_semaphore, &xHigherPriorityTaskWoken);
-        } else {
-            // 写入失败
-            if (uart_id == UART_ID_LTE) {
-                s_lte_write_fail_count++;
+        }
+    }
+    
+    // 处理发送完成中断（每个字节发送完成后触发）
+    if (USART_GetIntStatus(USARTx, USART_INT_TXC) == SET) 
+    {
+        // 清除发送完成标志
+        USART_ClrIntPendingBit(USARTx, USART_INT_TXC);
+        uint8_t tx_byte;
+        // 从发送环形缓冲区读取数据
+        if (ring_buffer_read_from_isr(&uart_dev->tx_ring_buffer, &tx_byte) == RB_OK) 
+        {
+            USART_SendData(USARTx, tx_byte);
+        } 
+        else 
+        {
+            // 发送缓冲区空，所有数据发送完成
+            // 禁用发送完成中断
+            USART_ConfigInt(USARTx, USART_INT_TXC, DISABLE);
+            
+            // 更新发送状态
+            s_tx_states[uart_id] = TX_STATE_COMPLETE;
+            
+            // RS485发送完成后切换回接收模式
+            if (uart_id == UART_ID_RS485) 
+            {
+                RS485_DIR_RX();
             }
+            // 通知发送完成
+            xSemaphoreGiveFromISR(uart_dev->tx_complete_semaphore, &xHigherPriorityTaskWoken);
         }
     }
     
@@ -468,6 +517,3 @@ void uart_irq_handler(UART_ID_t uart_id) {
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
 }
 
-
-
-// (原转发控制API已移除)

@@ -1,9 +1,9 @@
 /*
  * @Author: 23Elapse userszy@163.com
  * @Date: 2025-09-07 19:21:33
- * @LastEditors: 23Elapse userszy@163.com
- * @LastEditTime: 2025-09-09 16:25:39
- * @FilePath: \DTU_4G\Project\MDK_KinergyII4G\Source\sdk\02_software_api\lte_module_init.c
+ * @LastEditors: Elapse23 userszy@163.com
+ * @LastEditTime: 2025-10-15 11:28:38
+ * @FilePath: \dtu_4g\Project\MDK_KinergyII4G\Source\sdk\02_software_api\lte_module_init.c
  * @Description: 
  * 
  * Copyright (c) 2025 by 23Elapse userszy@163.com, All Rights Reserved. 
@@ -37,29 +37,29 @@ void lte_4g_module_ctrl_pin_init(void)
 void lte_4g_module_hardware_reset()  // 4G模块硬件复位
 {
     lte_module_reset_pin_reset();
-    vTaskDelay(500);             // 500ms
+    vTaskDelay(pdMS_TO_TICKS(500));             // 500ms
 	lte_module_reset_pin_set();
     lte_module_power_pin_set();
-	vTaskDelay(1500);            // 1.5s
+	vTaskDelay(pdMS_TO_TICKS(1500));            // 1.5s
 	lte_module_reset_pin_reset();
 	lte_module_power_pin_reset();
-	vTaskDelay(3000);            // 3s
+	vTaskDelay(pdMS_TO_TICKS(3000));            // 3s
 	lte_module_reset_pin_set();
     lte_module_power_pin_set();
 }
 void lte_4g_module_hardware_open()  // 4G模块硬件复位
 {
-    vTaskDelay(1000);            // 1s
+    vTaskDelay(pdMS_TO_TICKS(1000));            // 1s
     lte_module_power_pin_reset();
-    vTaskDelay(3000);            // 3s
+    vTaskDelay(pdMS_TO_TICKS(3000));            // 3s
     lte_module_power_pin_set();
 }
 void lte_4g_module_hardware_close()  // 4G模块硬件复位
 {
 	lte_module_power_pin_reset();
-    vTaskDelay(5000);            // 5s
+    vTaskDelay(pdMS_TO_TICKS(5000));            // 5s
     lte_module_power_pin_set();
-    vTaskDelay(30000);           // 30s
+    vTaskDelay(pdMS_TO_TICKS(30000));           // 30s
 
 }
 

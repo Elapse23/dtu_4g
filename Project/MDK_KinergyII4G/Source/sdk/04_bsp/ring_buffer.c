@@ -34,7 +34,6 @@ RB_Status ring_buffer_init(RingBuffer_t* rb, uint8_t* buffer, uint32_t capacity,
     rb->tail = 0;
     rb->count = 0;
 
-    // 不在环形缓冲区层面创建信号量，由上层驱动负责信号量管理
     rb->sem = NULL;
     return RB_OK;
 }
@@ -45,7 +44,6 @@ RB_Status ring_buffer_deinit(RingBuffer_t* rb) {
     // 不再释放buffer，因为它是外部静态数组
     rb->buffer = NULL;
     
-    // 环形缓冲区本身不创建信号量，无需删除
     rb->sem = NULL;
     return RB_OK;
 }
@@ -54,47 +52,32 @@ RB_Status ring_buffer_write(RingBuffer_t* rb, const void* data) {
     if (!rb || !rb->buffer || !data) return RB_ERROR_INIT;
     if (rb->count >= rb->capacity) return RB_ERROR_BUFFER_FULL;
 
-    // 完全禁用中断的临界区保护
-    portDISABLE_INTERRUPTS();
-    
     memcpy(rb->buffer + rb->tail * rb->element_size, data, rb->element_size);
     rb->tail = (rb->tail + 1) % rb->capacity;
     rb->count++;
-    
-    // 恢复中断
-    portENABLE_INTERRUPTS();
 
-    // 信号量由上层驱动管理，环形缓冲区不负责信号量操作
     return RB_OK;
 }
 
-RB_Status ring_buffer_write_from_isr(RingBuffer_t* rb, const void* data, void* xHigherPriorityTaskWoken) {
+RB_Status ring_buffer_write_from_isr(RingBuffer_t* rb, const void* data) {
     if (!rb || !rb->buffer || !data) return RB_ERROR_INIT;
     if (rb->count >= rb->capacity) return RB_ERROR_BUFFER_FULL;
 
     memcpy(rb->buffer + rb->tail * rb->element_size, data, rb->element_size);
     rb->tail = (rb->tail + 1) % rb->capacity;
     rb->count++;
-
-    // 信号量由上层驱动管理，环形缓冲区不负责信号量操作
+    
     return RB_OK;
 }
 
 RB_Status ring_buffer_read(RingBuffer_t* rb, void* data) {
     if (!rb || !rb->buffer || !data) return RB_ERROR_INIT;
     
-    // 注意：信号量的获取(Take)应由消费者任务在使用Read之前完成，而不是在Read函数内部
     if (rb->count == 0) return RB_ERROR_BUFFER_EMPTY;
 
-    // 完全禁用中断的临界区保护
-    portDISABLE_INTERRUPTS();
-    
     memcpy(data, rb->buffer + rb->head * rb->element_size, rb->element_size);
     rb->head = (rb->head + 1) % rb->capacity;
     rb->count--;
-    
-    // 恢复中断
-    portENABLE_INTERRUPTS();
     
     return RB_OK;
 }
@@ -104,7 +87,6 @@ RB_Status ring_buffer_read_from_isr(RingBuffer_t* rb, void* data) {
     
     if (rb->count == 0) return RB_ERROR_BUFFER_EMPTY;
 
-    // 在中断中不需要临界区保护，因为中断已经禁用了抢占
     memcpy(data, rb->buffer + rb->head * rb->element_size, rb->element_size);
     rb->head = (rb->head + 1) % rb->capacity;
     rb->count--;
@@ -181,9 +163,6 @@ void ring_buffer_clear(RingBuffer_t* rb) {
     rb->count = 0;
     // 结束临界区
 
-    // 清空信号量计数值 (需要RTOS抽象层支持，或者重新创建信号量)
-    // 简单起见，消费者任务在调用Clear后需要知道缓冲区已空。
-    // 一个简单的方法是循环Take信号量直到超时。
 }
 
 /**

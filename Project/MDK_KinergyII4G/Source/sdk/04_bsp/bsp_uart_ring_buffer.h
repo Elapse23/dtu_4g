@@ -124,12 +124,11 @@ UART_Status_t uart_flush_tx(UART_ID_t uart_id);
 void uart_irq_handler(UART_ID_t uart_id);
 
 /**
- * @brief LTE调试统计信息获取
+ * @brief 获取串口发送状态
+ * @param uart_id 串口ID
+ * @return true=发送忙碌中, false=发送空闲
  */
-uint32_t uart_get_lte_irq_count(void);
-uint32_t uart_get_lte_send_count(void);
-void uart_get_lte_write_stats(uint32_t* write_ok, uint32_t* write_fail);
-uint32_t uart_get_lte_debug_data(uint8_t* debug_data);
+bool uart_is_tx_busy(UART_ID_t uart_id);
 
 // === 便捷宏定义 ===
 
